@@ -102,9 +102,17 @@ export function Navbar() {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <div className="flex items-center gap-6">
-                <Link to="/login" className="text-xs font-bold uppercase tracking-widest text-white/50 hover:text-white transition-colors">{t("login")}</Link>
-                <Link to="/signup" className="px-6 py-2.5 bg-white text-black text-xs font-bold uppercase tracking-widest rounded-full hover:scale-105 active:scale-95 transition-all">
+              <div className="flex items-center gap-8">
+                <Link 
+                  to="/login" 
+                  className="text-xs font-bold uppercase tracking-[0.2em] text-white/40 hover:text-white transition-all duration-300"
+                >
+                  {t("login")}
+                </Link>
+                <Link 
+                  to="/signup" 
+                  className="px-8 py-3 bg-white text-black text-[10px] font-black uppercase tracking-[0.2em] rounded-full hover:bg-white/90 hover:scale-105 active:scale-95 transition-all shadow-[0_0_20px_rgba(255,255,255,0.3)]"
+                >
                   {t("signup")}
                 </Link>
               </div>

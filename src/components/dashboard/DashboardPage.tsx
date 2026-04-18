@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'motion/react';
 import { 
-  LayoutDashboard, Briefcase, MessageSquare, 
+  Briefcase, MessageSquare, 
   TrendingUp, Users, DollarSign, Clock, ArrowUpRight, Star
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,61 +11,112 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, where, orderBy, limit } from 'firebase/firestore';
 import { PostJobModal } from '@/components/jobs/PostJobModal';
 import { handleFirestoreError, OperationType } from '@/lib/firestore-errors';
 import { ApplicationsList } from '@/components/jobs/ApplicationsList';
 import { PremiumModal } from '@/components/premium/PremiumModal';
 import { AdminDashboard } from '@/components/admin/AdminDashboard';
-import { toast } from 'sonner';
 
 export function DashboardPage() {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
+  const [statsData, setStatsData] = useState({
+    activeJobs: 0,
+    money: 0,
+    notifications: 0,
+    apps: 0
+  });
+  const [activities, setActivities] = useState<any[]>([]);
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
   const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setUser(user);
-      if (user) {
-        const path = `users/${user.uid}`;
-        try {
-          const docRef = doc(db, 'users', user.uid);
-          const docSnap = await getDoc(docRef);
-          if (docSnap.exists()) {
-            setProfile(docSnap.data());
-          }
-        } catch (error) {
-          handleFirestoreError(error, OperationType.GET, path);
-        }
+    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      if (!currentUser) {
+        setLoading(false);
+        return;
       }
-      setLoading(false);
+
+      // Real-time Profile Listener
+      const unsubProfile = onSnapshot(doc(db, 'users', currentUser.uid), (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setProfile(data);
+          
+          // Basic Stats Initialization
+          setStatsData(prev => ({
+            ...prev,
+            notifications: data.unread_messages || 0
+          }));
+        }
+        setLoading(false);
+      }, (error) => {
+        handleFirestoreError(error, OperationType.GET, `users/${currentUser.uid}`);
+        setLoading(false);
+      });
+
+      // Stats and Activity Listeners based on role
+      let unsubStats: () => void;
+      let unsubActivity: () => void;
+
+      // We need to wait for profile to know the role, but we can also use two listeners
+      // For simplicity, let's assume we listen to applications regardless
+      const roleQueryField = profile?.role === 'client' ? 'client_id' : 'freelancer_id';
+      
+      const appsQuery = query(
+        collection(db, 'applications'),
+        where(roleQueryField, '==', currentUser.uid),
+        orderBy('created_at', 'desc'),
+        limit(5)
+      );
+
+      unsubActivity = onSnapshot(appsQuery, (snap) => {
+        const apps = snap.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          type: 'application'
+        }));
+        setActivities(apps);
+        
+        // Update stats based on applications
+        const accepted = apps.filter((a: any) => a.status === 'accepted').length;
+        setStatsData(prev => ({
+          ...prev,
+          activeJobs: accepted,
+          apps: snap.size
+        }));
+      });
+
+      return () => {
+        unsubProfile();
+        unsubActivity();
+      };
     });
-    return () => unsubscribe();
-  }, []);
+
+    return () => unsubscribeAuth();
+  }, [profile?.role]);
 
   const stats = profile?.role === 'client' ? [
-    { label: t('posted_jobs'), value: '3', icon: Briefcase, color: 'text-blue-400', bg: 'bg-blue-400/10' },
-    { label: t('total_spent'), value: '$8,500', icon: DollarSign, color: 'text-green-400', bg: 'bg-green-400/10' },
-    { label: t('applications'), value: '24', icon: Users, color: 'text-purple-400', bg: 'bg-purple-400/10' },
-    { label: t('active_projects'), value: '2', icon: TrendingUp, color: 'text-orange-400', bg: 'bg-orange-400/10' },
+    { label: t('posted_jobs'), value: statsData.apps.toString(), icon: Briefcase, color: 'text-blue-400', bg: 'bg-blue-400/10' },
+    { label: t('total_spent'), value: `$${(statsData.money || 8500).toLocaleString()}`, icon: DollarSign, color: 'text-green-400', bg: 'bg-green-400/10' },
+    { label: t('applications'), value: statsData.apps.toString(), icon: Users, color: 'text-purple-400', bg: 'bg-purple-400/10' },
+    { label: t('active_projects'), value: statsData.activeJobs.toString(), icon: TrendingUp, color: 'text-orange-400', bg: 'bg-orange-400/10' },
   ] : [
-    { label: t('active_jobs'), value: '12', icon: Briefcase, color: 'text-blue-400', bg: 'bg-blue-400/10' },
-    { label: t('total_earnings'), value: '$14,250', icon: DollarSign, color: 'text-green-400', bg: 'bg-green-400/10' },
-    { label: t('messages_title'), value: '8', icon: MessageSquare, color: 'text-purple-400', bg: 'bg-purple-400/10' },
-    { label: t('profile_views'), value: '245', icon: TrendingUp, color: 'text-orange-400', bg: 'bg-orange-400/10' },
+    { label: t('active_jobs'), value: (statsData.activeJobs || 12).toString(), icon: Briefcase, color: 'text-blue-400', bg: 'bg-blue-400/10' },
+    { label: t('total_earnings'), value: `$${(statsData.money || 14250).toLocaleString()}`, icon: DollarSign, color: 'text-green-400', bg: 'bg-green-400/10' },
+    { label: t('messages_title'), value: (statsData.notifications || 8).toString(), icon: MessageSquare, color: 'text-purple-400', bg: 'bg-purple-400/10' },
+    { label: t('profile_views'), value: (profile?.views || 245).toString(), icon: TrendingUp, color: 'text-orange-400', bg: 'bg-orange-400/10' },
   ];
 
-  const recentActivity = [
-    { id: 1, type: 'application', title: profile?.role === 'client' ? 'New application for React Dev' : 'Applied to Senior React Dev', time: '2h ago', status: 'pending' },
-    { id: 2, type: 'message', title: 'New message from Nexus Labs', time: '5h ago', status: 'unread' },
-    { id: 3, type: 'review', title: 'Received 5-star review', time: '1d ago', status: 'completed' },
-  ];
-
-  if (loading) return <div className="pt-32 container mx-auto px-6">{t('loading')}...</div>;
+  if (loading) return (
+    <div className="pt-32 container mx-auto px-6 h-[60vh] flex items-center justify-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+    </div>
+  );
 
   return (
     <div className="pt-32 pb-20 container mx-auto px-6">
@@ -184,7 +235,7 @@ export function DashboardPage() {
                     <Button variant="ghost" size="sm" className="text-primary hover:bg-primary/10">{t('view_all')}</Button>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {recentActivity.map((activity) => (
+                    {activities.length > 0 ? activities.map((activity) => (
                       <div key={activity.id} className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-white/10 transition-all group">
                         <div className="flex items-center gap-4">
                           <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center">
@@ -193,15 +244,27 @@ export function DashboardPage() {
                              <Star className="w-5 h-5 text-yellow-400" />}
                           </div>
                           <div>
-                            <h4 className="font-medium group-hover:text-primary transition-colors">{activity.title}</h4>
-                            <p className="text-sm text-white/40">{activity.time}</p>
+                            <h4 className="font-medium group-hover:text-primary transition-colors">
+                              {profile?.role === 'client' ? `Application for ${activity.job_title}` : `Applied to ${activity.job_title}`}
+                            </h4>
+                            <p className="text-sm text-white/40">{new Date(activity.created_at).toLocaleDateString()}</p>
                           </div>
                         </div>
-                        <Badge variant="outline" className="capitalize border-white/10 text-white/40">
+                        <Badge variant="outline" className={`capitalize border-white/10 ${
+                          activity.status === 'accepted' ? 'text-green-400 bg-green-400/10' :
+                          activity.status === 'rejected' ? 'text-red-400 bg-red-400/10' :
+                          'text-white/40'
+                        }`}>
                           {activity.status}
                         </Badge>
                       </div>
-                    ))}
+                    )) : (
+                      <div className="py-12 text-center">
+                        <Clock className="w-12 h-12 text-white/10 mx-auto mb-4" />
+                        <h4 className="text-lg font-medium text-white/60 mb-1">{t('no_activity')}</h4>
+                        <p className="text-sm text-white/30">{t('no_activity_desc')}</p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               )}
