@@ -60,8 +60,8 @@ export function Navbar() {
       <div className={`container mx-auto px-4 md:px-6 transition-all duration-700 ${isScrolled ? 'max-w-[95%] md:max-w-4xl' : 'max-w-7xl'}`}>
         <div className={`flex items-center justify-between transition-all duration-700 ${isScrolled ? 'glass-dark rounded-2xl md:rounded-full px-6 md:px-8 py-3' : 'bg-transparent'}`}>
           <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-2xl bg-primary flex items-center justify-center shadow-[0_0_30px_rgba(139,92,246,0.6)] group-hover:scale-110 group-hover:rotate-12 transition-all duration-500">
-              <span className="text-2xl font-display font-medium italic text-white">W</span>
+            <div className="w-10 h-10 rounded-2xl bg-primary flex items-center justify-center shadow-[0_0_30px_rgba(139,92,246,0.6)] group-hover:scale-110 transition-all duration-500">
+              <span className="text-2xl font-display font-bold text-white">W</span>
             </div>
             {!isScrolled && (
               <span className="text-2xl font-display font-medium tracking-tighter text-white">WorkTime</span>
@@ -130,43 +130,90 @@ export function Navbar() {
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="md:hidden absolute top-full left-0 right-0 glass-dark border-t border-white/10 p-6 flex flex-col gap-6"
+            initial={{ opacity: 0, x: '100%' }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: '100%' }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className="md:hidden fixed inset-0 z-50 glass-dark bg-[#030014]/90 backdrop-blur-2xl p-8 flex flex-col justify-between"
           >
-            {navLinks.map((link) => (
-              <Link 
-                key={link.name} 
-                to={link.href}
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="text-lg font-medium text-white/70 hover:text-white flex items-center gap-3"
-              >
-                <link.icon className="w-5 h-5" />
-                {link.name}
-              </Link>
-            ))}
-            <div className="pt-6 border-t border-white/10 flex flex-col gap-4">
+            <div className="space-y-12">
               <div className="flex items-center justify-between">
-                <span className="text-white/70">{t('language')}</span>
-                <div className="flex gap-4">
-                  <button onClick={() => changeLanguage('en')} className={i18n.language === 'en' ? 'text-primary' : 'text-white/70'}>EN</button>
-                  <button onClick={() => changeLanguage('uz')} className={i18n.language === 'uz' ? 'text-primary' : 'text-white/70'}>UZ</button>
+                <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-primary flex items-center justify-center">
+                    <span className="text-2xl font-display font-medium text-white">W</span>
+                  </div>
+                  <span className="text-2xl font-display font-medium tracking-tighter text-white">WorkTime</span>
+                </Link>
+                <button onClick={() => setIsMobileMenuOpen(false)} className="w-10 h-10 rounded-full glass border-white/10 flex items-center justify-center">
+                  <X className="w-5 h-5 text-white" />
+                </button>
+              </div>
+
+              <div className="flex flex-col gap-6">
+                {navLinks.map((link, i) => (
+                  <motion.div
+                    key={link.name}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.1 }}
+                  >
+                    <Link 
+                      to={link.href}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="text-2xl font-display font-medium text-white/50 hover:text-white flex items-center gap-6 group transition-all"
+                    >
+                      <span className="text-sm font-mono text-primary/40 group-hover:text-primary transition-colors">0{i + 1}</span>
+                      {link.name}
+                    </Link>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-8">
+              <div className="flex items-center justify-between p-6 rounded-3xl glass border-white/10">
+                <div className="flex items-center gap-3 text-white/50">
+                  <Globe className="w-4 h-4" />
+                  <span className="text-xs font-bold uppercase tracking-widest">{t('language')}</span>
+                </div>
+                <div className="flex gap-6">
+                  <button onClick={() => changeLanguage('en')} className={`text-sm font-bold ${i18n.language === 'en' ? 'text-primary' : 'text-white/30'}`}>ENGLISH</button>
+                  <button onClick={() => changeLanguage('uz')} className={`text-sm font-bold ${i18n.language === 'uz' ? 'text-primary' : 'text-white/30'}`}>UZBEK</button>
                 </div>
               </div>
-              {!user && (
+
+              {!user ? (
+                <div className="grid grid-cols-2 gap-4">
+                  <Link 
+                    to="/login"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="h-16 flex items-center justify-center text-sm font-bold uppercase tracking-widest border border-white/10 rounded-2xl text-white/60"
+                  >
+                    {t("login")}
+                  </Link>
+                  <Link 
+                    to="/signup"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="h-16 flex items-center justify-center text-sm font-bold uppercase tracking-widest bg-white text-black rounded-2xl"
+                  >
+                    {t("signup")}
+                  </Link>
+                </div>
+              ) : (
                 <div className="grid grid-cols-2 gap-4">
                   <Button
                     variant="ghost"
-                    render={<Link to="/login">{t("login")}</Link>}
-                    nativeButton={false}
-                    className="text-white border border-white/10"
-                  />
+                    onClick={() => { navigate('/profile'); setIsMobileMenuOpen(false); }}
+                    className="h-16 glass border-white/10 text-white gap-2"
+                  >
+                    <User className="w-4 h-4" /> {t("profile")}
+                  </Button>
                   <Button
-                    className="bg-primary"
-                    render={<Link to="/signup">{t("signup")}</Link>}
-                    nativeButton={false}
-                  />
+                    onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }}
+                    className="h-16 bg-red-500/10 text-red-400 hover:bg-red-500/20 gap-2"
+                  >
+                    <LogOut className="w-4 h-4" /> {t("logout")}
+                  </Button>
                 </div>
               )}
             </div>

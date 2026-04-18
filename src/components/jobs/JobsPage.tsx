@@ -182,12 +182,13 @@ export function JobsPage() {
             filteredJobs.map((job) => (
               <motion.div
                 key={job.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                whileHover={{ scale: 1.01 }}
-                className="group"
+                initial={{ opacity: 0, y: 15 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                whileHover={typeof window !== 'undefined' && window.innerWidth > 1024 ? { scale: 1.01 } : {}}
+                className="group will-change-transform"
               >
-                <Card className={`glass-card border-white/10 ${job.is_featured ? 'border-primary/30 bg-primary/5' : ''}`}>
+                <Card className={`glass-card border-white/10 will-change-transform ${job.is_featured ? 'border-primary/30 bg-primary/5' : ''}`}>
                   <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
                     <div className="flex gap-4">
                       <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center border border-white/10">

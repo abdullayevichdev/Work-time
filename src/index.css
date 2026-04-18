@@ -21,15 +21,15 @@
 
 @layer utilities {
   .glass {
-    @apply bg-white/[0.03] backdrop-blur-2xl border border-white/[0.08] shadow-[0_8px_32px_0_rgba(0,0,0,0.5)];
+    @apply bg-white/[0.03] backdrop-blur-lg border border-white/[0.08] shadow-[0_8px_32px_0_rgba(0,0,0,0.5)];
   }
   
   .glass-dark {
-    @apply bg-black/40 backdrop-blur-3xl border border-white/[0.05] shadow-[0_24px_48px_0_rgba(0,0,0,0.8)];
+    @apply bg-black/40 backdrop-blur-xl border border-white/[0.05] shadow-[0_24px_48px_0_rgba(0,0,0,0.8)];
   }
 
   .glass-card {
-    @apply relative overflow-hidden rounded-3xl bg-white/[0.02] backdrop-blur-xl border border-white/[0.06] transition-all duration-500 hover:bg-white/[0.05] hover:border-white/[0.12] hover:shadow-[0_0_40px_rgba(139,92,246,0.2)] hover:-translate-y-1;
+    @apply relative overflow-hidden rounded-3xl bg-white/[0.02] backdrop-blur-md border border-white/[0.06] transition-all duration-500 hover:bg-white/[0.05] hover:border-white/[0.12] hover:shadow-[0_0_40px_rgba(139,92,246,0.2)] hover:-translate-y-1 will-change-[transform,filter];
   }
 
   .glow-text {
@@ -115,7 +115,10 @@
   opacity: 0.03;
   pointer-events: none;
   z-index: 50;
-  animation: noise 8s steps(10) infinite;
+  /* Disable animation on mobile to save GPU cycles */
+  @media (min-width: 1024px) {
+    animation: noise 8s steps(10) infinite;
+  }
 }
 
 .perspective-1000 {

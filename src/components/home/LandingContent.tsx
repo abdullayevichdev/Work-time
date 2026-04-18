@@ -25,17 +25,17 @@ export function LandingContent() {
         <motion.div 
           initial="hidden"
           whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
+          viewport={{ once: true, margin: "-50px" }}
           variants={staggerContainer}
-          className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-4 md:gap-6"
+          className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-4 md:gap-6 will-change-transform"
         >
           {/* Main Large Card */}
-          <motion.div variants={fadeInUp} className="md:col-span-4 lg:col-span-4 glass-card p-6 md:p-10 flex flex-col justify-between min-h-[300px] md:min-h-[400px]">
+          <motion.div variants={fadeInUp} className="md:col-span-4 lg:col-span-4 glass-card p-6 md:p-10 flex flex-col justify-between min-h-[300px] md:min-h-[400px] will-change-transform">
             <div>
               <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-primary/20 flex items-center justify-center mb-6 md:mb-8">
                 <Sparkles className="w-6 h-6 md:w-7 md:h-7 text-primary" />
               </div>
-              <h3 className="text-3xl md:text-5xl font-display font-medium mb-4 md:mb-6">{t("feat_main_title")} <br/><span className="italic">{t("feat_main_italic")}</span></h3>
+              <h3 className="text-3xl md:text-5xl font-display font-medium mb-4 md:mb-6">{t("feat_main_title")} <br/><span className="text-primary font-bold">{t("feat_main_italic")}</span></h3>
               <p className="text-white/40 text-base md:text-lg max-w-md leading-relaxed">{t("feat_main_desc")}</p>
             </div>
             <div className="flex gap-3 md:gap-4 mt-6 md:mt-8">
@@ -65,9 +65,9 @@ export function LandingContent() {
                 <h3 className="text-xl md:text-2xl font-bold mb-3 md:mb-4">{t("feat_global_title")}</h3>
                 <p className="text-sm md:text-base text-white/40 leading-relaxed">{t("feat_global_desc")}</p>
              </div>
-             <div className="w-full md:w-1/2 h-full min-h-[150px] md:min-h-[200px] rounded-2xl bg-white/[0.03] border border-white/5 relative overflow-hidden">
+             <div className="w-full md:w-1/2 h-full min-h-[150px] md:min-h-[200px] rounded-2xl bg-white/[0.03] border border-white/5 relative overflow-hidden will-change-transform">
                 <div className="absolute inset-0 bg-mesh opacity-50" />
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 md:w-32 md:h-32 bg-primary/20 rounded-full blur-3xl animate-pulse" />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 md:w-32 md:h-32 bg-primary/20 rounded-full blur-3xl animate-pulse will-change-[opacity]" />
              </div>
           </motion.div>
         </motion.div>
@@ -101,7 +101,7 @@ export function LandingContent() {
       <section className="container mx-auto px-6">
         <div className="flex flex-col md:flex-row gap-12 md:gap-20 items-center">
           <div className="w-full md:w-1/3 text-center md:text-left">
-            <h2 className="text-4xl md:text-6xl font-display font-medium mb-6 md:mb-8 leading-tight">{t("flow_title")} <br/><span className="text-primary italic">{t("flow_italic")}</span></h2>
+            <h2 className="text-3xl md:text-6xl font-display font-medium mb-6 md:mb-8 leading-tight">{t("flow_title")} <br/><span className="text-primary font-bold uppercase tracking-widest text-xl md:text-4xl">{t("flow_italic")}</span></h2>
             <p className="text-white/40 text-base md:text-lg leading-relaxed">{t("flow_desc")}</p>
           </div>
           
@@ -148,7 +148,7 @@ export function LandingContent() {
                   <p className="text-[10px] text-white/30 tracking-widest uppercase font-bold">{t.role}</p>
                 </div>
               </div>
-              <p className="text-white/60 text-base md:text-lg italic whitespace-normal leading-relaxed">"{t.text}"</p>
+              <p className="text-white/60 text-base md:text-lg font-medium whitespace-normal leading-relaxed">"{t.text}"</p>
             </div>
           ))}
         </div>
@@ -164,7 +164,7 @@ export function LandingContent() {
             viewport={{ once: true }}
             className="relative z-10"
           >
-            <h2 className="text-3xl md:text-7xl font-display font-medium mb-6 md:mb-8">{t("cta_title")} <span className="italic">{t("cta_italic")}</span></h2>
+            <h2 className="text-3xl md:text-7xl font-display font-medium mb-6 md:mb-8">{t("cta_title")} <span className="text-primary font-bold">{t("cta_italic")}</span></h2>
             <p className="text-white/50 text-base md:text-xl max-w-xl mx-auto mb-8 md:mb-12">{t("cta_desc")}</p>
             <button className="h-16 md:h-20 px-8 md:px-12 bg-white text-black font-bold rounded-xl md:rounded-2xl text-lg md:text-xl hover:scale-105 active:scale-95 transition-all duration-300">
               {t("cta_button")}

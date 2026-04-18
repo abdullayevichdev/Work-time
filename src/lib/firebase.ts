@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, getDocFromServer } from 'firebase/firestore';
 // @ts-ignore
 import localConfig from '../../firebase-applet-config.json';
 
@@ -17,9 +17,26 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 
-// CRITICAL: Initialize Firestore with forced long-polling to bypass corporate firewalls or iframe blocks
+// Initialize Firestore with forced long-polling to bypass corporate firewalls or iframe blocks
+const dbId = firebaseConfig.firestoreDatabaseId || '(default)';
 export const db = initializeFirestore(app, {
-  experimentalForceLongPolling: true, // Forces HTTP instead of WebSockets
-}, firebaseConfig.firestoreDatabaseId);
+  experimentalForceLongPolling: true,
+  host: 'firestore.googleapis.com',
+  ssl: true,
+}, dbId);
 
 // Firebase ready
+// Test connection
+const testConnection = async () => {
+  try {
+    // Attempt to fetch a document to verify connection
+    await getDocFromServer(doc(db, 'test', 'connection'));
+    console.log("Firestore connection successful.");
+  } catch (error: any) {
+    console.warn("Firestore Connection Test:", error.message);
+    if (error?.message?.includes('the client is offline') || error?.message?.includes('Could not reach')) {
+      console.error("Please check your Firebase configuration or internet connection. Forced long polling is enabled.");
+    }
+  }
+};
+testConnection();

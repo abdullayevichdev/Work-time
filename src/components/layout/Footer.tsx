@@ -11,10 +11,10 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
           <div className="space-y-6">
             <Link to="/" className="flex items-center gap-3 group">
-              <div className="w-10 h-10 rounded-2xl bg-primary flex items-center justify-center shadow-[0_0_20px_rgba(139,92,246,0.3)] group-hover:rotate-12 transition-transform duration-500">
-                <span className="text-2xl font-display font-medium italic text-white">W</span>
+              <div className="w-10 h-10 rounded-2xl bg-primary flex items-center justify-center shadow-[0_0_20px_rgba(139,92,246,0.3)] transition-transform duration-500">
+                <span className="text-2xl font-display font-bold text-white">W</span>
               </div>
-              <span className="text-2xl font-display font-medium tracking-tighter text-white">WorkTime</span>
+              <span className="text-2xl font-display font-bold tracking-tighter text-white">WorkTime</span>
             </Link>
             <p className="text-white/40 leading-relaxed text-sm">
               {t("footer_desc")}

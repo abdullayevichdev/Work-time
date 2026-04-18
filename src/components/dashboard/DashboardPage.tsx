@@ -46,8 +46,6 @@ export function DashboardPage() {
         if (docSnap.exists()) {
           const data = docSnap.data();
           setProfile(data);
-          
-          // Basic Stats Initialization
           setStatsData(prev => ({
             ...prev,
             notifications: data.unread_messages || 0
@@ -59,46 +57,43 @@ export function DashboardPage() {
         setLoading(false);
       });
 
-      // Stats and Activity Listeners based on role
-      let unsubStats: () => void;
-      let unsubActivity: () => void;
-
-      // We need to wait for profile to know the role, but we can also use two listeners
-      // For simplicity, let's assume we listen to applications regardless
-      const roleQueryField = profile?.role === 'client' ? 'client_id' : 'freelancer_id';
-      
-      const appsQuery = query(
-        collection(db, 'applications'),
-        where(roleQueryField, '==', currentUser.uid),
-        orderBy('created_at', 'desc'),
-        limit(5)
-      );
-
-      unsubActivity = onSnapshot(appsQuery, (snap) => {
-        const apps = snap.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          type: 'application'
-        }));
-        setActivities(apps);
-        
-        // Update stats based on applications
-        const accepted = apps.filter((a: any) => a.status === 'accepted').length;
-        setStatsData(prev => ({
-          ...prev,
-          activeJobs: accepted,
-          apps: snap.size
-        }));
-      });
-
-      return () => {
-        unsubProfile();
-        unsubActivity();
-      };
+      return () => unsubProfile();
     });
 
     return () => unsubscribeAuth();
-  }, [profile?.role]);
+  }, []);
+
+  // Separate effect for role-based listeners to be more stable
+  useEffect(() => {
+    if (!user || !profile?.role) return;
+
+    const roleQueryField = profile.role === 'client' ? 'client_id' : 'freelancer_id';
+    
+    const appsQuery = query(
+      collection(db, 'applications'),
+      where(roleQueryField, '==', user.uid),
+      orderBy('created_at', 'desc'),
+      limit(10)
+    );
+
+    const unsubActivity = onSnapshot(appsQuery, (snap) => {
+      const apps = snap.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        type: 'application'
+      }));
+      setActivities(apps);
+      
+      const accepted = apps.filter((a: any) => a.status === 'accepted').length;
+      setStatsData(prev => ({
+        ...prev,
+        activeJobs: accepted,
+        apps: snap.size
+      }));
+    });
+
+    return () => unsubActivity();
+  }, [user?.uid, profile?.role]);
 
   const stats = profile?.role === 'client' ? [
     { label: t('posted_jobs'), value: statsData.apps.toString(), icon: Briefcase, color: 'text-blue-400', bg: 'bg-blue-400/10' },
@@ -133,44 +128,48 @@ export function DashboardPage() {
         onClose={() => setIsPremiumModalOpen(false)}
       />
       
-      <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-12">
-        <div className="flex items-center gap-6">
-          <div className="relative">
-            <Avatar className="w-20 h-20 border-2 border-primary/50 p-1 bg-white/5">
+      <div className="flex flex-col lg:flex-row items-center lg:items-end justify-between gap-8 mb-12 bg-white/5 p-8 rounded-[2.5rem] border border-white/5 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-8 relative z-10 w-full lg:w-auto">
+          <div className="relative group">
+            <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl group-hover:bg-primary/40 transition-all duration-500" />
+            <Avatar className="w-24 h-24 border-2 border-white/10 p-1 bg-[#030014] relative z-10">
               <AvatarImage src={user?.photoURL || ''} />
-              <AvatarFallback className="bg-primary/20 text-primary text-2xl font-bold">
+              <AvatarFallback className="bg-primary/10 text-primary text-3xl font-display font-bold">
                 {profile?.full_name?.[0] || user?.email?.[0] || 'U'}
               </AvatarFallback>
             </Avatar>
-            <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-4 border-[#030014]" />
+            <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-green-500 rounded-full border-4 border-[#030014] z-20" />
           </div>
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-display font-bold glow-text">
-                {t('welcome_back')} {profile?.full_name || user?.email?.split('@')[0] || 'User'}!
+          <div className="text-center sm:text-left space-y-2">
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3">
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-display font-bold tracking-tight text-white">
+                {t('welcome_back')} <span className="text-primary font-bold">{profile?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'User'}</span>!
               </h1>
-              {profile?.is_premium && (
-                <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-black border-none font-bold">PREMIUM</Badge>
-              )}
-              {profile?.is_admin && (
-                <Badge className="bg-red-500 text-white border-none font-bold">ADMIN</Badge>
-              )}
+              <div className="flex gap-2">
+                {profile?.is_premium && (
+                  <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-black border-none font-black text-[10px] tracking-widest px-3">PREMIUM</Badge>
+                )}
+                {profile?.is_admin && (
+                  <Badge className="bg-red-500 text-white border-none font-black text-[10px] tracking-widest px-3">ADMIN</Badge>
+                )}
+              </div>
             </div>
-            <div className="flex items-center gap-3 mt-1">
-              <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5 capitalize">{profile?.role === 'client' ? t('hire_role') : t('freelancer_role')}</Badge>
-              <span className="text-white/40 text-sm flex items-center gap-1">
-                <Clock className="w-3 h-3" /> {t('last_active')} {t('just_now')}
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 text-white/40 text-sm">
+              <Badge variant="outline" className="border-white/10 text-white/60 bg-white/5 backdrop-blur-md px-4 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase">{profile?.role === 'client' ? t('hire_role') : t('freelancer_role')}</Badge>
+              <span className="flex items-center gap-2 font-medium">
+                <Clock className="w-4 h-4 text-primary" /> {t('last_active')} {t('just_now')}
               </span>
             </div>
           </div>
         </div>
         
-        <div className="flex gap-4">
+        <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
           {!profile?.is_premium && !profile?.is_admin && (
             <Button 
               onClick={() => setIsPremiumModalOpen(true)}
               variant="outline"
-              className="border-yellow-500/50 text-yellow-500 hover:bg-yellow-500/10"
+              className="h-14 px-8 border-yellow-500/30 text-yellow-500 hover:bg-yellow-500/10 rounded-2xl font-bold flex-1 sm:flex-none"
             >
               {t('upgrade_premium')}
             </Button>
@@ -178,7 +177,7 @@ export function DashboardPage() {
           {profile?.role === 'client' && (
             <Button 
               onClick={() => setIsPostModalOpen(true)}
-              className="bg-primary hover:bg-primary/80 shadow-[0_0_15px_rgba(139,92,246,0.3)]"
+              className="h-14 px-8 bg-primary hover:bg-primary/80 shadow-[0_0_20px_rgba(139,92,246,0.3)] rounded-2xl font-bold flex-1 sm:flex-none"
             >
               {t('post_new_job')}
             </Button>
@@ -191,15 +190,17 @@ export function DashboardPage() {
       ) : (
         <>
           {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
             {stats.map((stat, i) => (
               <motion.div
                 key={stat.label}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
+                initial={{ opacity: 0, y: 15 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.05 }}
+                className="will-change-transform"
               >
-                <Card className="glass border-white/10 hover:border-white/20 transition-all group">
+                <Card className="glass border-white/10 hover:border-white/20 transition-all group will-change-transform">
                   <CardContent className="p-6 flex items-center justify-between">
                     <div>
                       <p className="text-sm text-white/40 mb-1">{stat.label}</p>

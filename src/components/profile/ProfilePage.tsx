@@ -370,7 +370,7 @@ export function ProfilePage() {
                     >
                       {skill}
                     </motion.div>
-                  )) || <p className="text-white/20 italic">{t('no_skills')}</p>}
+                  )) || <p className="text-white/20 font-medium">{t('no_skills')}</p>}
                 </div>
               )}
             </motion.div>

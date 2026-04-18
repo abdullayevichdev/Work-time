@@ -169,10 +169,10 @@ export function AuthPage({ mode }: AuthPageProps) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 pt-28">
-      <div className="bg-blob w-[500px] h-[500px] bg-primary/10 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 blur-[120px]" />
+    <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 pt-24 md:pt-28 overflow-hidden relative">
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/10 blur-[120px] rounded-full animate-pulse pointer-events-none" />
       
-      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative z-10">
+      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center relative z-10">
         {/* Left Side: Auth Form */}
         <motion.div
           initial={{ opacity: 0, x: -50 }}
@@ -188,11 +188,11 @@ export function AuthPage({ mode }: AuthPageProps) {
           transition={{ duration: 0.8, ease: "easeOut" }}
           className="w-full max-w-md mx-auto lg:mx-0"
         >
-          <div className="glass p-10 rounded-[2.5rem] border-white/10 shadow-2xl relative overflow-hidden">
+          <div className="glass p-6 sm:p-10 rounded-[2rem] sm:rounded-[2.5rem] border-white/10 shadow-2xl relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 blur-3xl -mr-16 -mt-16" />
             
-            <div className="mb-10 text-center lg:text-left">
-              <h2 className="text-4xl font-display font-bold mb-3 tracking-tight">
+            <div className="mb-8 sm:mb-10 text-center lg:text-left">
+              <h2 className="text-3xl sm:text-4xl font-display font-bold mb-3 tracking-tight">
                 {mode === 'login' ? t('login') : t('signup')}
               </h2>
               <p className="text-white/50 text-lg">
