@@ -1,0 +1,65 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. GLOBAL SAFETY NET: Default deny all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. HELPER FUNCTIONS
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // 3. VALIDATION HELPERS
+    function isValidUserProfile(data) {
+      return data.full_name is string && data.full_name.size() > 0 && data.full_name.size() < 200 &&
+             data.email is string && data.email == request.auth.token.email &&
+             (data.role == null || data.role in ['freelancer', 'client', 'admin']) &&
+             (data.is_premium == null || data.is_premium is bool);
+    }
+
+    // 4. COLLECTION RULES
+    
+    // Users Collection
+    match /users/{userId} {
+      // Users can only read and write their own profile
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUserProfile(request.resource.data);
+      allow update: if isOwner(userId) && isValidUserProfile(request.resource.data) &&
+                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['full_name', 'bio', 'title', 'skills', 'hourly_rate', 'location', 'socials', 'photo_url', 'last_updated']);
+      
+      // Public view for freelancer profiles if we want (for later search feature)
+      allow list: if isSignedIn(); 
+    }
+
+    // Jobs Collection
+    match /jobs/{jobId} {
+      allow read: if true; // Jobs are public
+      allow create: if isSignedIn() && isVerified();
+      allow update, delete: if isSignedIn() && resource.data.client_id == request.auth.uid;
+    }
+
+    // Proposals Collection
+    match /proposals/{proposalId} {
+      allow read: if isSignedIn() && (resource.data.freelancer_id == request.auth.uid || 
+                     get(/databases/$(database)/documents/jobs/$(resource.data.job_id)).data.client_id == request.auth.uid);
+      allow create: if isSignedIn() && isVerified();
+      allow update: if isSignedIn() && (resource.data.freelancer_id == request.auth.uid || 
+                       get(/databases/$(database)/documents/jobs/$(resource.data.job_id)).data.client_id == request.auth.uid);
+    }
+
+    // Messages Collection
+    match /conversations/{convId}/messages/{msgId} {
+      allow read, create: if isSignedIn() && (request.auth.uid in convId.split('_'));
+    }
+  }
+}

@@ -1,0 +1,92 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function isAdmin() { 
+      return isSignedIn() && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.is_admin == true ||
+        request.auth.token.email == "abdulxayavazxanov2014@gmail.com"
+      );
+    }
+
+    // --- USERS ---
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow create: if isOwner(userId) && request.resource.data.is_admin == false;
+      allow update: if isOwner(userId) && (
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['is_admin', 'is_verified', 'email', 'created_at'])
+      ) || isAdmin();
+    }
+
+    // --- JOBS ---
+    function isValidJob(data) {
+      return data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
+             data.description is string && data.description.size() > 0 &&
+             data.budget is number && data.budget >= 0 &&
+             data.budget_type in ['fixed', 'hourly'] &&
+             data.status in ['open', 'in-progress', 'completed', 'cancelled'] &&
+             data.client_id == request.auth.uid;
+    }
+
+    match /jobs/{jobId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isValidJob(request.resource.data);
+      allow update: if isSignedIn() && (
+        (resource.data.client_id == request.auth.uid && isValidJob(request.resource.data)) ||
+        isAdmin()
+      );
+      allow delete: if isAdmin();
+    }
+
+    // --- PROPOSALS ---
+    function isValidProposal(data) {
+      return data.job_id is string &&
+             data.freelancer_id == request.auth.uid &&
+             data.bid_amount is number &&
+             data.status in ['pending', 'accepted', 'rejected', 'withdrawn'];
+    }
+
+    match /proposals/{proposalId} {
+      allow read: if isSignedIn() && (
+        resource.data.freelancer_id == request.auth.uid || 
+        get(/databases/$(database)/documents/jobs/$(resource.data.job_id)).data.client_id == request.auth.uid
+      );
+      allow create: if isSignedIn() && isValidProposal(request.resource.data) &&
+                     get(/databases/$(database)/documents/jobs/$(request.resource.data.job_id)).data.status == 'open';
+      allow update: if isSignedIn() && (
+        (resource.data.freelancer_id == request.auth.uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['bid_amount', 'cover_letter', 'status'])) ||
+        (get(/databases/$(database)/documents/jobs/$(resource.data.job_id)).data.client_id == request.auth.uid && 
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']))
+      );
+    }
+
+    // --- CONTRACTS ---
+    match /contracts/{contractId} {
+      allow read: if isSignedIn() && (resource.data.client_id == request.auth.uid || resource.data.freelancer_id == request.auth.uid);
+      allow create: if isAdmin(); // Contracts created by system or admin after proposal acceptance
+      allow update: if isSignedIn() && (
+        (resource.data.client_id == request.auth.uid || resource.data.freelancer_id == request.auth.uid) ||
+        isAdmin()
+      );
+    }
+
+    // --- MESSAGES ---
+    match /conversations/{convId} {
+      allow read: if isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/conversations/$(convId)).data.participants;
+      
+      match /messages/{msgId} {
+        allow read: if isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/conversations/$(convId)).data.participants;
+        allow create: if isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/conversations/$(convId)).data.participants &&
+                       request.resource.data.sender_id == request.auth.uid;
+      }
+    }
+  }
+}

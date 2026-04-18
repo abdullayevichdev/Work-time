@@ -1,0 +1,134 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Comprehensive user profile for freelancers, clients, and admins.",
+      "type": "object",
+      "properties": {
+        "full_name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "avatar_url": { "type": "string" },
+        "role": { "type": "string", "enum": ["freelancer", "client", "admin"] },
+        "bio": { "type": "string" },
+        "skills": { "type": "array", "items": { "type": "string" } },
+        "hourly_rate": { "type": "number" },
+        "experience": { "type": "string" },
+        "portfolio": { "type": "array", "items": { "type": "object" } },
+        "is_premium": { "type": "boolean" },
+        "is_verified": { "type": "boolean" },
+        "is_admin": { "type": "boolean" },
+        "stats": {
+          "type": "object",
+          "properties": {
+            "completed_jobs": { "type": "number" },
+            "total_earned": { "type": "number" },
+            "rating": { "type": "number" }
+          }
+        },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["full_name", "email", "role", "created_at"]
+    },
+    "Job": {
+      "title": "Job",
+      "description": "A job posting with budget and requirements.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "budget": { "type": "number" },
+        "budget_type": { "type": "string", "enum": ["fixed", "hourly"] },
+        "experience_level": { "type": "string", "enum": ["entry", "intermediate", "expert"] },
+        "category": { "type": "string" },
+        "skills_required": { "type": "array", "items": { "type": "string" } },
+        "client_id": { "type": "string" },
+        "status": { "type": "string", "enum": ["open", "in-progress", "completed", "cancelled"] },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "description", "budget", "budget_type", "client_id", "status", "created_at"]
+    },
+    "Proposal": {
+      "title": "Proposal",
+      "description": "A freelancer's bid on a job.",
+      "type": "object",
+      "properties": {
+        "job_id": { "type": "string" },
+        "freelancer_id": { "type": "string" },
+        "bid_amount": { "type": "number" },
+        "cover_letter": { "type": "string" },
+        "estimated_days": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "accepted", "rejected", "withdrawn"] },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["job_id", "freelancer_id", "bid_amount", "cover_letter", "status", "created_at"]
+    },
+    "Contract": {
+      "title": "Contract",
+      "description": "Active work agreement between client and freelancer.",
+      "type": "object",
+      "properties": {
+        "job_id": { "type": "string" },
+        "client_id": { "type": "string" },
+        "freelancer_id": { "type": "string" },
+        "proposal_id": { "type": "string" },
+        "amount": { "type": "number" },
+        "status": { "type": "string", "enum": ["active", "completed", "disputed", "paused"] },
+        "start_date": { "type": "string", "format": "date-time" },
+        "end_date": { "type": "string", "format": "date-time" }
+      },
+      "required": ["job_id", "client_id", "freelancer_id", "amount", "status", "start_date"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "Real-time chat message.",
+      "type": "object",
+      "properties": {
+        "conversation_id": { "type": "string" },
+        "sender_id": { "type": "string" },
+        "text": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["conversation_id", "sender_id", "text", "timestamp"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Financial movement history.",
+      "type": "object",
+      "properties": {
+        "user_id": { "type": "string" },
+        "contract_id": { "type": "string" },
+        "amount": { "type": "number" },
+        "type": { "type": "string", "enum": ["payment", "withdrawal", "refund"] },
+        "status": { "type": "string", "enum": ["pending", "completed", "failed"] },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["user_id", "amount", "type", "status", "created_at"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User account and profile data"
+    },
+    "/jobs/{jobId}": {
+      "schema": "Job",
+      "description": "Job listings"
+    },
+    "/proposals/{proposalId}": {
+      "schema": "Proposal",
+      "description": "User bids on jobs"
+    },
+    "/contracts/{contractId}": {
+      "schema": "Contract",
+      "description": "Work agreements"
+    },
+    "/conversations/{convId}/messages/{msgId}": {
+      "schema": "Message",
+      "description": "Chat messages within a conversation"
+    },
+    "/transactions/{id}": {
+      "schema": "Transaction",
+      "description": "Financial logs"
+    }
+  }
+}
