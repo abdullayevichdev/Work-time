@@ -40,10 +40,10 @@ service cloud.firestore {
       allow get: if isOwner(userId);
       allow create: if isOwner(userId) && isValidUserProfile(request.resource.data);
       allow update: if isOwner(userId) && isValidUserProfile(request.resource.data) &&
-                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['full_name', 'bio', 'title', 'skills', 'hourly_rate', 'location', 'socials', 'photo_url', 'last_updated']);
+                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['full_name', 'bio', 'title', 'skills', 'hourly_rate', 'location', 'socials', 'photo_url', 'last_updated', 'is_new_user', 'role']);
       
       // Public view for freelancer profiles if we want (for later search feature)
-      allow list: if isSignedIn(); 
+      allow list: if isVerified(); 
     }
 
     // Jobs Collection

@@ -129,15 +129,22 @@ export function ProfilePage() {
   }
 
   return (
-    <div className="pt-24 pb-20 min-h-screen">
-      {/* Hero Section / Cover */}
-      <div className="h-64 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-blue-900/40 to-purple-900/20" />
-        <div className="absolute inset-0 backdrop-blur-[100px]" />
+    <div className="pt-24 pb-20 min-h-screen bg-[#030014]">
+      {/* Hero Section / Cover - High end Mesh Gradient */}
+      <div className="h-64 md:h-80 relative overflow-hidden">
+        {/* Animated Mesh */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-transparent to-blue-600/20" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_-20%,rgba(120,119,198,0.3),rgba(255,255,255,0))]" />
+        
+        {/* Architectural Grid pattern */}
         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]" />
+        
+        {/* Volumetric Glow */}
+        <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-full h-full bg-primary/20 blur-[120px] rounded-full" />
       </div>
 
-      <div className="container mx-auto px-6 -mt-32 relative z-10">
+      <div className="container mx-auto px-4 md:px-6 -mt-24 md:-mt-32 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
           {/* Left Column: Brief Info */}
@@ -145,9 +152,9 @@ export function ProfilePage() {
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="glass p-8 rounded-[32px] border-white/10 text-center relative overflow-hidden group"
+              className="glass p-6 sm:p-8 rounded-[2.5rem] border-white/10 text-center relative overflow-hidden group shadow-2xl"
             >
-              <div className="absolute top-0 right-0 p-4">
+              <div className="absolute top-0 right-0 p-5">
                 {profile?.is_premium ? (
                   <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-black border-none font-bold shadow-lg shadow-yellow-500/20">PREMIUM</Badge>
                 ) : (
@@ -155,8 +162,12 @@ export function ProfilePage() {
                 )}
               </div>
 
-              <div className="relative mb-6 inline-block">
-                <Avatar className="w-32 h-32 border-4 border-[#0a0a1a] p-1.5 bg-gradient-to-br from-primary to-blue-600">
+              <div className="relative mb-8 inline-block">
+                {/* Decorative rings */}
+                <div className="absolute inset-0 -m-3 rounded-full border border-primary/20 animate-pulse" />
+                <div className="absolute inset-0 -m-6 rounded-full border border-primary/5 scale-90" />
+                
+                <Avatar className="w-32 h-32 border-[6px] border-[#030014] p-1.5 bg-gradient-to-br from-primary via-blue-500 to-cyan-400 shadow-2xl relative z-10">
                   <AvatarImage src={user?.photoURL || ''} className="rounded-full object-cover" />
                   <AvatarFallback className="bg-[#0f172a] text-primary text-4xl font-bold">
                     {profile?.full_name?.[0] || 'U'}
@@ -210,29 +221,29 @@ export function ProfilePage() {
                 </>
               )}
 
-              <div className="grid grid-cols-3 gap-4 py-6 border-y border-white/5 my-6">
+              <div className="grid grid-cols-3 gap-2 sm:gap-4 py-4 sm:py-6 border-y border-white/5 my-6">
                 <div>
-                  <p className="text-xl font-bold">4.9</p>
-                  <p className="text-[10px] text-white/30 uppercase tracking-tighter">{t('rating')}</p>
+                  <p className="text-lg sm:text-xl font-bold">4.9</p>
+                  <p className="text-[9px] sm:text-[10px] text-white/30 uppercase tracking-tighter">{t('rating')}</p>
                 </div>
                 <div>
-                  <p className="text-xl font-bold">12</p>
-                  <p className="text-[10px] text-white/30 uppercase tracking-tighter">{t('profile_jobs')}</p>
+                  <p className="text-lg sm:text-xl font-bold">12</p>
+                  <p className="text-[9px] sm:text-[10px] text-white/30 uppercase tracking-tighter">{t('profile_jobs')}</p>
                 </div>
                 <div>
                   {isEditing ? (
                     <div className="flex items-center justify-center gap-1">
-                      <span className="text-sm text-white/40">$</span>
+                      <span className="text-xs sm:text-sm text-white/40">$</span>
                       <Input 
                         value={editedRate} 
                         onChange={(e) => setEditedRate(e.target.value)}
-                        className="bg-transparent border-none p-0 w-8 h-auto font-bold text-center"
+                        className="bg-transparent border-none p-0 w-8 h-auto font-bold text-center text-lg sm:text-xl"
                       />
                     </div>
                   ) : (
-                    <p className="text-xl font-bold">${profile?.hourly_rate || '45'}</p>
+                    <p className="text-lg sm:text-xl font-bold">${profile?.hourly_rate || '45'}</p>
                   )}
-                  <p className="text-[10px] text-white/30 uppercase tracking-tighter">{t('rate_h')}</p>
+                  <p className="text-[9px] sm:text-[10px] text-white/30 uppercase tracking-tighter">{t('rate_h')}</p>
                 </div>
               </div>
 
@@ -314,10 +325,16 @@ export function ProfilePage() {
             <motion.div 
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="glass p-10 rounded-[40px] border-white/10"
+              className="glass-dark p-8 md:p-12 rounded-[3.5rem] border-white/5 relative overflow-hidden"
             >
-              <div className="flex items-center justify-between mb-8">
-                <h3 className="text-2xl font-bold">{t('about_me')}</h3>
+              {/* Decorative side accent */}
+              <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-primary/50 to-transparent" />
+              
+              <div className="flex items-center justify-between mb-10">
+                <div className="space-y-1">
+                  <h3 className="text-3xl font-display font-bold tracking-tight">{t('about_me')}</h3>
+                  <div className="h-1 w-12 bg-primary rounded-full" />
+                </div>
                 <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
                   <User className="w-5 h-5 text-primary" />
                 </div>
