@@ -161,8 +161,11 @@ export function AuthPage({ mode }: AuthPageProps) {
       }
       if (error.code === 'auth/invalid-email') message = t('error_invalid_email');
       if (error.code === 'auth/weak-password') message = t('error_weak_password');
+      if (error.code === 'auth/operation-not-allowed') {
+        message = "Email/Parol orqali kirish o'chirilgan. Iltimos, Firebase Console -> Authentication -> Sign-in method bo'limidan buni yoqing.";
+      }
       
-      toast.error(message);
+      toast.error(message, { duration: 8000 });
     } finally {
       setLoading(false);
     }

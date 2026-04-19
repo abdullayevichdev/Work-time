@@ -29,6 +29,11 @@ service cloud.firestore {
 
     // 4. COLLECTION RULES
     
+    // Connection test document
+    match /test/connection {
+      allow read: if true;
+    }
+    
     // Users Collection
     match /users/{userId} {
       // Users can only read and write their own profile

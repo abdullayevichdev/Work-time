@@ -149,7 +149,7 @@ export function Navbar() {
                 </button>
               </div>
 
-              <div className="flex flex-col gap-6">
+              <div className="flex flex-col gap-5">
                 {navLinks.map((link, i) => (
                   <motion.div
                     key={link.name}
@@ -160,9 +160,9 @@ export function Navbar() {
                     <Link 
                       to={link.href}
                       onClick={() => setIsMobileMenuOpen(false)}
-                      className="text-2xl font-display font-medium text-white/50 hover:text-white flex items-center gap-6 group transition-all"
+                      className="text-xl font-display font-medium text-white/50 hover:text-white flex items-center gap-6 group transition-all"
                     >
-                      <span className="text-sm font-mono text-primary/40 group-hover:text-primary transition-colors">0{i + 1}</span>
+                      <span className="text-xs font-mono text-primary/40 group-hover:text-primary transition-colors">0{i + 1}</span>
                       {link.name}
                     </Link>
                   </motion.div>
@@ -170,49 +170,49 @@ export function Navbar() {
               </div>
             </div>
 
-            <div className="space-y-8">
-              <div className="flex items-center justify-between p-6 rounded-3xl glass border-white/10">
-                <div className="flex items-center gap-3 text-white/50">
-                  <Globe className="w-4 h-4" />
-                  <span className="text-xs font-bold uppercase tracking-widest">{t('language')}</span>
+            <div className="space-y-6">
+              <div className="flex items-center justify-between px-6 py-4 rounded-2xl glass border-white/10">
+                <div className="flex items-center gap-2 text-white/40">
+                  <Globe className="w-3.5 h-3.5" />
+                  <span className="text-[10px] font-bold uppercase tracking-widest">{t('language')}</span>
                 </div>
-                <div className="flex gap-6">
-                  <button onClick={() => changeLanguage('en')} className={`text-sm font-bold ${i18n.language === 'en' ? 'text-primary' : 'text-white/30'}`}>ENGLISH</button>
-                  <button onClick={() => changeLanguage('uz')} className={`text-sm font-bold ${i18n.language === 'uz' ? 'text-primary' : 'text-white/30'}`}>UZBEK</button>
+                <div className="flex gap-5">
+                  <button onClick={() => changeLanguage('en')} className={`text-xs font-bold tracking-tight ${i18n.language === 'en' ? 'text-primary' : 'text-white/30'}`}>EN</button>
+                  <button onClick={() => changeLanguage('uz')} className={`text-xs font-bold tracking-tight ${i18n.language === 'uz' ? 'text-primary' : 'text-white/30'}`}>UZ</button>
                 </div>
               </div>
 
               {!user ? (
-                <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-3">
                   <Link 
                     to="/login"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="h-16 flex items-center justify-center text-sm font-bold uppercase tracking-widest border border-white/10 rounded-2xl text-white/60"
+                    className="h-12 flex items-center justify-center text-xs font-bold uppercase tracking-widest border border-white/10 rounded-xl text-white/60 hover:bg-white/5 transition-colors"
                   >
                     {t("login")}
                   </Link>
                   <Link 
                     to="/signup"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="h-16 flex items-center justify-center text-sm font-bold uppercase tracking-widest bg-white text-black rounded-2xl"
+                    className="h-12 flex items-center justify-center text-xs font-bold uppercase tracking-widest bg-white text-black rounded-xl hover:bg-white/90 transition-all shadow-lg"
                   >
                     {t("signup")}
                   </Link>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3">
                   <Button
                     variant="ghost"
                     onClick={() => { navigate('/profile'); setIsMobileMenuOpen(false); }}
-                    className="h-16 glass border-white/10 text-white gap-2"
+                    className="h-12 glass border-white/10 text-white gap-2 text-xs rounded-xl"
                   >
-                    <User className="w-4 h-4" /> {t("profile")}
+                    <User className="w-3.5 h-3.5" /> {t("profile")}
                   </Button>
                   <Button
                     onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }}
-                    className="h-16 bg-red-500/10 text-red-400 hover:bg-red-500/20 gap-2"
+                    className="h-12 bg-red-500/10 text-red-400 hover:bg-red-500/20 gap-2 text-xs rounded-xl"
                   >
-                    <LogOut className="w-4 h-4" /> {t("logout")}
+                    <LogOut className="w-3.5 h-3.5" /> {t("logout")}
                   </Button>
                 </div>
               )}
