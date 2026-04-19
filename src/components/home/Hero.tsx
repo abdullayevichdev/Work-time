@@ -108,33 +108,35 @@ export function Hero() {
             >
               {t("hero_title_1")}
             </motion.span>
-            <AnimatePresence mode="wait">
-              <motion.div 
-                key={textIndex}
-                initial={{ y: 20, opacity: 0, filter: 'blur(10px)' }}
-                animate={{ y: 0, opacity: 1, filter: 'blur(0px)' }}
-                exit={{ y: -20, opacity: 0, filter: 'blur(10px)' }}
-                transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-                className="relative z-10 mt-2 md:mt-4 group cursor-default select-none -skew-x-6 h-[1.2em] flex items-center justify-center translate-z-0"
-              >
-                {/* Liquid Volumetric Highlight */}
-                <span className="absolute inset-0 blur-3xl opacity-30 bg-gradient-to-r from-cyan-300 via-primary/20 to-indigo-400/20 pointer-events-none transition-all duration-[2s] group-hover:opacity-50 group-hover:scale-125">
-                  {words[textIndex]}.
-                </span>
-                
-                <span className="relative inline-block text-liquid text-sharp pb-2">
-                  {words[textIndex]}.
-                </span>
-
-                {/* Decorative holographic line */}
+            <div className="relative h-[1.2em] w-full flex items-center justify-center">
+              <AnimatePresence mode="wait">
                 <motion.div 
-                  initial={{ scaleX: 0, opacity: 0 }}
-                  animate={{ scaleX: 1, opacity: 1 }}
-                  transition={{ delay: 0.4, duration: 1, ease: "circOut" }}
-                  className="absolute -bottom-1 md:-bottom-2 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent"
-                />
-              </motion.div>
-            </AnimatePresence>
+                  key={textIndex}
+                  initial={{ y: 20, opacity: 0, filter: 'blur(10px)' }}
+                  animate={{ y: 0, opacity: 1, filter: 'blur(0px)' }}
+                  exit={{ y: -20, opacity: 0, filter: 'blur(10px)' }}
+                  transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                  className="absolute inset-0 z-10 mt-2 md:mt-4 group cursor-default select-none -skew-x-6 flex items-center justify-center translate-z-0"
+                >
+                  {/* Liquid Volumetric Highlight */}
+                  <span className="absolute inset-0 blur-3xl opacity-30 bg-gradient-to-r from-cyan-300 via-primary/20 to-indigo-400/20 pointer-events-none transition-all duration-[2s] group-hover:opacity-50 group-hover:scale-125">
+                    {words[textIndex]}.
+                  </span>
+                  
+                  <span className="relative inline-block text-liquid text-sharp pb-2">
+                    {words[textIndex]}.
+                  </span>
+
+                  {/* Decorative holographic line */}
+                  <motion.div 
+                    initial={{ scaleX: 0, opacity: 0 }}
+                    animate={{ scaleX: 1, opacity: 1 }}
+                    transition={{ delay: 0.4, duration: 1, ease: "circOut" }}
+                    className="absolute -bottom-1 md:-bottom-2 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent"
+                  />
+                </motion.div>
+              </AnimatePresence>
+            </div>
           </motion.h1>
           
           <div className="relative mb-8 md:mb-12">
