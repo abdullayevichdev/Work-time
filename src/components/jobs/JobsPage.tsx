@@ -224,20 +224,20 @@ export function JobsPage() {
                       <Badge variant="secondary" className="bg-white/40 border-indigo-900/10 text-indigo-900/60 text-sharp">{t(`cat_${job.category?.toLowerCase() || 'dev'}`)}</Badge>
                     </div>
                   </CardContent>
-                  <CardFooter className="flex items-center justify-between border-t border-indigo-900/5 pt-6">
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xl font-bold text-indigo-950 text-sharp">${job.budget}</span>
-                      <span className="text-indigo-900/40 text-sm font-medium text-sharp">/ {job.budget_type === 'hourly' ? t('hr') : t('project')}</span>
+                  <CardFooter className="flex flex-col sm:flex-row items-center justify-between border-t border-indigo-900/5 pt-6 gap-4">
+                    <div className="flex items-center gap-1.5 order-2 sm:order-1">
+                      <span className="text-xl md:text-2xl font-bold text-indigo-950 text-sharp">${job.budget}</span>
+                      <span className="text-indigo-900/40 text-xs md:text-sm font-medium text-sharp">/ {job.budget_type === 'hourly' ? t('hr') : t('project')}</span>
                     </div>
-                    <div className="flex gap-2">
-                      <Link to={`/jobs/${job.id}`}>
-                        <Button variant="ghost" className="glass border-white/10 hover:bg-white/5">
+                    <div className="flex gap-2 w-full sm:w-auto order-1 sm:order-2">
+                      <Link to={`/jobs/${job.id}`} className="flex-1 sm:flex-initial">
+                        <Button variant="ghost" className="glass border-white/10 hover:bg-white/5 w-full text-xs sm:text-sm h-9 md:h-10">
                           {t('view_details')}
                         </Button>
                       </Link>
                       <Button 
                         onClick={() => handleApply(job)}
-                        className="bg-primary hover:bg-primary/80 text-white shadow-lg shadow-primary/20"
+                        className="flex-1 sm:flex-initial bg-primary hover:bg-primary/80 text-white shadow-lg shadow-primary/20 text-xs sm:text-sm h-9 md:h-10"
                       >
                         {t('apply')}
                       </Button>

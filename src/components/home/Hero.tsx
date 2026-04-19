@@ -1,4 +1,4 @@
-import { motion, useScroll, useTransform, useReducedMotion } from 'motion/react';
+import { motion, useScroll, useTransform, useReducedMotion, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -10,13 +10,23 @@ export function Hero() {
   const shouldReduceMotion = useReducedMotion();
   const containerRef = useRef<HTMLDivElement>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [textIndex, setTextIndex] = useState(0);
+  const words = [t("freelancer_role"), t("hire_role")];
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
     window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+
+    const interval = setInterval(() => {
+      setTextIndex((prev) => (prev + 1) % words.length);
+    }, 4000);
+
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+      clearInterval(interval);
+    };
+  }, [words.length]);
 
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -42,7 +52,7 @@ export function Hero() {
   };
 
   return (
-    <div ref={containerRef} className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
+    <div ref={containerRef} className="relative min-h-screen flex items-center justify-center overflow-hidden pt-24 md:pt-20">
       {/* Dynamic Background Elements - Liquid Glass Effect */}
       <motion.div 
         style={!shouldReduceMotion ? { y, opacity, scale } : {}} 
@@ -91,36 +101,40 @@ export function Hero() {
           
           <motion.h1 
             variants={itemVariants}
-            className="text-4xl sm:text-6xl md:text-8xl lg:text-[11.5rem] font-display font-bold tracking-tighter mb-8 md:mb-12 leading-tight md:leading-[0.8] text-indigo-900 flex flex-col items-center select-none perspective-1000"
+            className="text-4xl sm:text-6xl md:text-8xl lg:text-[11.5rem] font-display font-bold tracking-tighter mb-8 md:mb-12 leading-[1.1] md:leading-[0.8] text-indigo-950 flex flex-col items-center select-none perspective-1000"
           >
             <motion.span 
-              className="text-gradient inline-block relative z-30 drop-shadow-[0_15px_30px_rgba(139,92,246,0.1)] will-change-transform"
+              className="inline-block relative z-30 drop-shadow-[0_15px_30px_rgba(139,92,246,0.1)] will-change-transform text-indigo-900/40"
             >
               {t("hero_title_1")}
             </motion.span>
-            <motion.div 
-              initial={{ y: 20, opacity: 0, scale: 0.95 }}
-              animate={{ y: 0, opacity: 1, scale: 1 }}
-              transition={{ delay: 0.8, duration: 1, ease: [0.16, 1, 0.3, 1] }}
-              className="relative z-10 mt-2 md:mt-4 group cursor-default select-none -skew-x-6"
-            >
-              {/* Liquid Volumetric Highlight */}
-              <span className="absolute inset-0 blur-3xl opacity-30 bg-gradient-to-r from-cyan-300 via-primary/20 to-indigo-400/20 pointer-events-none transition-all duration-[2s] group-hover:opacity-50 group-hover:scale-125">
-                {t("hero_title_2")}
-              </span>
-              
-              <span className="relative inline-block text-liquid text-sharp">
-                {t("hero_title_2")}
-              </span>
-
-              {/* Decorative holographic line */}
+            <AnimatePresence mode="wait">
               <motion.div 
-                initial={{ scaleX: 0, opacity: 0 }}
-                animate={{ scaleX: 1, opacity: 1 }}
-                transition={{ delay: 2, duration: 1, ease: "circOut" }}
-                className="absolute -bottom-1 md:-bottom-2 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent"
-              />
-            </motion.div>
+                key={textIndex}
+                initial={{ y: 20, opacity: 0, filter: 'blur(10px)' }}
+                animate={{ y: 0, opacity: 1, filter: 'blur(0px)' }}
+                exit={{ y: -20, opacity: 0, filter: 'blur(10px)' }}
+                transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                className="relative z-10 mt-2 md:mt-4 group cursor-default select-none -skew-x-6 h-[1.2em] flex items-center justify-center translate-z-0"
+              >
+                {/* Liquid Volumetric Highlight */}
+                <span className="absolute inset-0 blur-3xl opacity-30 bg-gradient-to-r from-cyan-300 via-primary/20 to-indigo-400/20 pointer-events-none transition-all duration-[2s] group-hover:opacity-50 group-hover:scale-125">
+                  {words[textIndex]}.
+                </span>
+                
+                <span className="relative inline-block text-liquid text-sharp pb-2">
+                  {words[textIndex]}.
+                </span>
+
+                {/* Decorative holographic line */}
+                <motion.div 
+                  initial={{ scaleX: 0, opacity: 0 }}
+                  animate={{ scaleX: 1, opacity: 1 }}
+                  transition={{ delay: 0.4, duration: 1, ease: "circOut" }}
+                  className="absolute -bottom-1 md:-bottom-2 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent"
+                />
+              </motion.div>
+            </AnimatePresence>
           </motion.h1>
           
           <div className="relative mb-8 md:mb-12">

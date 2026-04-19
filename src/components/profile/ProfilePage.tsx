@@ -301,7 +301,7 @@ export function ProfilePage() {
                     placeholder="Professional Title"
                     className="bg-white/40 border-indigo-900/10 text-center text-sm text-indigo-900/60"
                   />
-                  <div className="flex justify-center gap-2 mt-2">
+                  <div className="flex justify-center gap-2 mt-2 flex-wrap px-2">
                     <button
                       onClick={() => setEditedRole('freelancer')}
                       className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all ${editedRole === 'freelancer' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'bg-indigo-900/5 text-indigo-900/30'}`}
@@ -317,13 +317,15 @@ export function ProfilePage() {
                   </div>
                 </div>
               ) : (
-                <>
-                  <h2 className="text-2xl font-bold mb-1 text-indigo-950 text-sharp">{profile?.full_name || t('no_name')}</h2>
-                  <div className="flex items-center justify-center gap-2 mb-6">
-                    <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5 text-[10px] uppercase font-bold tracking-widest">{profile?.role === 'client' ? t('hire_role') : t('freelancer_role')}</Badge>
-                    <p className="text-indigo-950/40 text-sm font-bold text-sharp uppercase tracking-tight">{profile?.title || t('prof_creator')}</p>
+                <div className="max-w-full px-2">
+                  <h2 className="text-xl md:text-2xl font-bold mb-2 text-indigo-950 text-sharp truncate w-full" title={profile?.full_name || t('no_name')}>
+                    {profile?.full_name || t('no_name')}
+                  </h2>
+                  <div className="flex flex-wrap items-center justify-center gap-2 mb-6">
+                    <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5 text-[10px] uppercase font-bold tracking-widest whitespace-nowrap">{profile?.role === 'client' ? t('hire_role') : t('freelancer_role')}</Badge>
+                    <span className="text-indigo-950/40 text-xs md:text-sm font-bold text-sharp uppercase tracking-tight text-center">{profile?.title || t('prof_creator')}</span>
                   </div>
-                </>
+                </div>
               )}
 
               <div className="grid grid-cols-3 gap-2 sm:gap-4 py-4 sm:py-6 border-y border-indigo-900/5 my-6 leading-none">
@@ -379,11 +381,11 @@ export function ProfilePage() {
                 <Globe className="w-4 h-4 mr-2 text-primary" /> {t('details')}
               </h3>
               <div className="space-y-4">
-                <div className="flex items-center gap-4 group">
-                  <div className="w-8 h-8 rounded-lg bg-indigo-900/5 flex items-center justify-center border border-indigo-900/5 group-hover:border-primary/50 transition-colors">
+                <div className="flex items-center gap-4 group min-w-0">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-900/5 flex items-center justify-center border border-indigo-900/5 group-hover:border-primary/50 transition-colors shrink-0">
                     <Mail className="w-3.5 h-3.5 text-indigo-900/60 group-hover:text-primary" />
                   </div>
-                  <span className="text-sm text-indigo-950/60 font-bold truncate text-sharp">{user?.email}</span>
+                  <span className="text-sm text-indigo-950/60 font-bold truncate text-sharp overflow-hidden">{user?.email}</span>
                 </div>
                 
                 <div className="flex items-center gap-4 group">

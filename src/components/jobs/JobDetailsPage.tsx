@@ -77,17 +77,17 @@ export function JobDetailsPage() {
             <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 blur-3xl -mr-32 -mt-32" />
             
             <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-8">
-              <div>
-                <h1 className="text-4xl font-display font-bold mb-4 text-indigo-950 text-sharp">{job.title}</h1>
-                <div className="flex flex-wrap gap-4 text-sm text-indigo-900/40 font-bold tracking-tight text-sharp">
+              <div className="min-w-0">
+                <h1 className="text-3xl md:text-4xl font-display font-bold mb-4 text-indigo-950 text-sharp break-words">{job.title}</h1>
+                <div className="flex flex-wrap gap-4 text-xs md:text-sm text-indigo-900/40 font-bold tracking-tight text-sharp">
                   <span className="flex items-center gap-1.5"><Tag className="w-4 h-4" /> {job.category}</span>
                   <span className="flex items-center gap-1.5"><Calendar className="w-4 h-4" /> Posted {new Date(job.created_at).toLocaleDateString()}</span>
                   <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4" /> Remote</span>
                 </div>
               </div>
-              <div className="text-right">
+              <div className="md:text-right flex flex-col md:items-end">
                 <p className="text-3xl font-bold text-primary text-sharp">${job.budget}</p>
-                <p className="text-sm text-indigo-900/40 font-bold text-sharp">{job.budget_type === 'hourly' ? 'Estimated / hr' : 'Fixed Price'}</p>
+                <p className="text-sm text-indigo-900/40 font-bold text-sharp whitespace-nowrap">{job.budget_type === 'hourly' ? 'Estimated / hr' : 'Fixed Price'}</p>
               </div>
             </div>
 
