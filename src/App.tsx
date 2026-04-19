@@ -23,7 +23,7 @@ function PageTransition({ children }: { children: React.ReactNode }) {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.3, ease: "easeOut" }}
-        className="w-full h-full will-change-[opacity,transform]"
+        className="w-full will-change-[opacity,transform]"
       >
         {children}
       </motion.div>
@@ -34,10 +34,13 @@ function PageTransition({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <Router>
-      <div className="min-h-screen bg-mesh relative">
+      <div className="min-h-screen relative overflow-x-hidden">
+        {/* Fixed Background Layers */}
+        <div className="bg-mesh" />
         <div className="noise-bg" />
+        
         <Navbar />
-        <main>
+        <main className="relative z-10">
           <PageTransition>
             <Routes>
               <Route path="/" element={<HomePage />} />

@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { db, auth } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore';
 import { ApplyModal } from './ApplyModal';
 
 export function JobDetailsPage() {
@@ -23,33 +23,32 @@ export function JobDetailsPage() {
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
 
   useEffect(() => {
-    const fetchJobData = async () => {
-      if (!id) return;
-      try {
-        const jobRef = doc(db, 'jobs', id);
-        const jobSnap = await getDoc(jobRef);
+    if (!id) return;
+    
+    // Real-time Job Listener
+    const unsubJob = onSnapshot(doc(db, 'jobs', id), (jobSnap) => {
+      if (jobSnap.exists()) {
+        const jobData = { id: jobSnap.id, ...jobSnap.data() } as any;
+        setJob(jobData);
+        setLoading(false);
         
-        if (jobSnap.exists()) {
-          const jobData = { id: jobSnap.id, ...jobSnap.data() } as any;
-          setJob(jobData);
-          
-          // Fetch client info
-          const clientRef = doc(db, 'users', jobData.client_id);
-          const clientSnap = await getDoc(clientRef);
+        // Fetch client info once we have jobData
+        const unsubClient = onSnapshot(doc(db, 'users', jobData.client_id), (clientSnap) => {
           if (clientSnap.exists()) {
             setClient(clientSnap.data());
           }
-        } else {
-          navigate('/jobs');
-        }
-      } catch (error) {
-        console.error('Error fetching job details:', error);
-      } finally {
-        setLoading(false);
+        });
+        
+        return () => unsubClient();
+      } else {
+        navigate('/jobs');
       }
-    };
+    }, (error) => {
+      console.error('Error fetching job details:', error);
+      setLoading(false);
+    });
 
-    fetchJobData();
+    return () => unsubJob();
   }, [id, navigate]);
 
   if (loading) return <div className="pt-32 container mx-auto px-6">Loading job details...</div>;
@@ -65,7 +64,7 @@ export function JobDetailsPage() {
 
       <button 
         onClick={() => navigate(-1)}
-        className="flex items-center gap-2 text-white/50 hover:text-white transition-colors mb-8 group"
+        className="flex items-center gap-2 text-indigo-900/40 hover:text-primary transition-colors mb-8 group font-medium text-sharp"
       >
         <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
         Back to Jobs
@@ -79,28 +78,28 @@ export function JobDetailsPage() {
             
             <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-8">
               <div>
-                <h1 className="text-4xl font-display font-bold mb-4">{job.title}</h1>
-                <div className="flex flex-wrap gap-4 text-sm text-white/40">
+                <h1 className="text-4xl font-display font-bold mb-4 text-indigo-950 text-sharp">{job.title}</h1>
+                <div className="flex flex-wrap gap-4 text-sm text-indigo-900/40 font-bold tracking-tight text-sharp">
                   <span className="flex items-center gap-1.5"><Tag className="w-4 h-4" /> {job.category}</span>
                   <span className="flex items-center gap-1.5"><Calendar className="w-4 h-4" /> Posted {new Date(job.created_at).toLocaleDateString()}</span>
                   <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4" /> Remote</span>
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-3xl font-bold text-primary">${job.budget}</p>
-                <p className="text-sm text-white/40">{job.budget_type === 'hourly' ? 'Estimated / hr' : 'Fixed Price'}</p>
+                <p className="text-3xl font-bold text-primary text-sharp">${job.budget}</p>
+                <p className="text-sm text-indigo-900/40 font-bold text-sharp">{job.budget_type === 'hourly' ? 'Estimated / hr' : 'Fixed Price'}</p>
               </div>
             </div>
 
             <div className="prose prose-invert max-w-none mb-12">
-              <h3 className="text-xl font-bold mb-4 text-white">Project Description</h3>
-              <p className="text-white/70 leading-relaxed whitespace-pre-wrap">
+              <h3 className="text-xl font-bold mb-4 text-indigo-950 text-sharp">Project Description</h3>
+              <p className="text-indigo-950/60 leading-relaxed whitespace-pre-wrap text-sharp font-normal">
                 {job.description}
               </p>
             </div>
 
             <div className="space-y-6">
-              <h3 className="text-xl font-bold text-white">Required Skills</h3>
+              <h3 className="text-xl font-bold text-indigo-950 text-sharp">Required Skills</h3>
               <div className="flex flex-wrap gap-2">
                 {job.skills_required?.map((skill: string) => (
                   <Badge key={skill} className="bg-primary/20 text-primary border-primary/30 px-4 py-2">
@@ -124,40 +123,40 @@ export function JobDetailsPage() {
                 <Send className="ml-2 w-5 h-5" />
               </Button>
               
-              <div className="pt-6 border-t border-white/5 space-y-6">
-                <h3 className="font-bold text-lg">About the Client</h3>
+              <div className="pt-6 border-t border-indigo-900/5 space-y-6">
+                <h3 className="font-bold text-lg text-indigo-950 text-sharp">About the Client</h3>
                 <div className="flex items-center gap-4">
-                  <Avatar className="w-12 h-12 border border-white/10">
+                  <Avatar className="w-12 h-12 border border-indigo-900/10">
                     <AvatarImage src={client?.avatar_url} />
-                    <AvatarFallback>{client?.full_name?.[0] || 'C'}</AvatarFallback>
+                    <AvatarFallback className="bg-primary/10 text-primary">{client?.full_name?.[0] || 'C'}</AvatarFallback>
                   </Avatar>
                   <div>
-                    <h4 className="font-bold truncate max-w-[150px]">{client?.full_name || 'Anonymous Client'}</h4>
-                    <p className="text-xs text-white/40 flex items-center gap-1">
+                    <h4 className="font-bold truncate max-w-[150px] text-indigo-950 text-sharp">{client?.full_name || 'Anonymous Client'}</h4>
+                    <p className="text-xs text-indigo-900/40 flex items-center gap-1 font-bold text-sharp">
                       <ShieldCheck className="w-3 h-3 text-green-500" /> Payment Verified
                     </p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
-                    <p className="text-xl font-bold">12</p>
-                    <p className="text-[10px] text-white/40 uppercase tracking-widest">Jobs Posted</p>
+                  <div className="p-4 rounded-2xl bg-indigo-900/5 border border-indigo-900/5 shadow-sm">
+                    <p className="text-xl font-bold text-indigo-950 text-sharp">12</p>
+                    <p className="text-[10px] text-indigo-900/40 uppercase tracking-widest font-bold text-sharp">Jobs Posted</p>
                   </div>
-                  <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
-                    <p className="text-xl font-bold">4.8</p>
-                    <p className="text-[10px] text-white/40 uppercase tracking-widest">Client Rating</p>
+                  <div className="p-4 rounded-2xl bg-indigo-900/5 border border-indigo-900/5 shadow-sm">
+                    <p className="text-xl font-bold text-indigo-950 text-sharp">4.8</p>
+                    <p className="text-[10px] text-indigo-900/40 uppercase tracking-widest font-bold text-sharp">Rating</p>
                   </div>
                 </div>
 
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-white/40">Location</span>
-                    <span>Verified</span>
+                  <div className="flex items-center justify-between text-sm font-medium">
+                    <span className="text-indigo-900/40 text-sharp">Location</span>
+                    <span className="text-indigo-950 text-sharp">Verified</span>
                   </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-white/40">Member since</span>
-                    <span>{client?.created_at ? new Date(client.created_at).getFullYear() : '2024'}</span>
+                  <div className="flex items-center justify-between text-sm font-medium">
+                    <span className="text-indigo-900/40 text-sharp">Member since</span>
+                    <span className="text-indigo-950 text-sharp">{client?.created_at ? new Date(client.created_at).getFullYear() : '2024'}</span>
                   </div>
                 </div>
               </div>

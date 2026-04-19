@@ -218,7 +218,7 @@ export function ProfilePage() {
   }
 
   return (
-    <div className="pt-24 pb-20 min-h-screen bg-[#030014]">
+    <div className="pt-24 pb-20 min-h-screen">
       {/* Hero Section / Cover - High end Mesh Gradient */}
       <div className="h-64 md:h-80 relative overflow-hidden">
         {/* Animated Mesh */}
@@ -245,9 +245,9 @@ export function ProfilePage() {
             >
               <div className="absolute top-0 right-0 p-5">
                 {profile?.is_premium ? (
-                  <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-black border-none font-bold shadow-lg shadow-yellow-500/20">PREMIUM</Badge>
+                  <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-black border-none font-black text-[10px] tracking-widest shadow-lg shadow-yellow-500/20">PREMIUM</Badge>
                 ) : (
-                  <Badge variant="outline" className="border-white/10 text-white/40">{t('free_plan')}</Badge>
+                  <Badge variant="outline" className="border-indigo-900/10 text-indigo-900/40 font-bold text-[10px] tracking-widest">{t('free_plan').toUpperCase()}</Badge>
                 )}
               </div>
 
@@ -256,13 +256,13 @@ export function ProfilePage() {
                 <div className="absolute inset-0 -m-3 rounded-full border border-primary/20 animate-pulse" />
                 <div className="absolute inset-0 -m-6 rounded-full border border-primary/5 scale-90" />
                 
-                <Avatar className="w-32 h-32 border-[6px] border-[#030014] p-1.5 bg-gradient-to-br from-primary via-blue-500 to-cyan-400 shadow-2xl relative z-10 overflow-hidden">
+                <Avatar className="w-32 h-32 border-[6px] border-white p-1.5 bg-gradient-to-br from-primary via-blue-500 to-cyan-400 shadow-2xl relative z-10 overflow-hidden">
                   <AvatarImage src={profile?.photo_url || user?.photoURL || ''} className="rounded-full object-cover" />
-                  <AvatarFallback className="bg-[#0f172a] text-primary text-4xl font-bold">
+                  <AvatarFallback className="bg-white text-primary text-4xl font-bold">
                     {profile?.full_name?.[0] || 'U'}
                   </AvatarFallback>
                   {uploading && (
-                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-20">
+                    <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center z-20">
                       <Loader2 className="w-8 h-8 text-primary animate-spin" />
                     </div>
                   )}
@@ -281,7 +281,7 @@ export function ProfilePage() {
                   whileTap={{ scale: 0.9 }}
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading}
-                  className="absolute bottom-1 right-1 w-10 h-10 rounded-full bg-primary flex items-center justify-center border-4 border-[#030014] shadow-xl z-20 hover:brightness-110 transition-all disabled:opacity-50"
+                  className="absolute bottom-1 right-1 w-10 h-10 rounded-full bg-primary flex items-center justify-center border-4 border-white shadow-xl z-20 hover:brightness-110 transition-all disabled:opacity-50"
                 >
                   <Camera className="w-4 h-4 text-white" />
                 </motion.button>
@@ -293,24 +293,24 @@ export function ProfilePage() {
                     value={editedName} 
                     onChange={(e) => setEditedName(e.target.value)}
                     placeholder={t('full_name')}
-                    className="bg-white/5 border-white/10 text-center text-xl font-bold"
+                    className="bg-white/40 border-indigo-900/10 text-center text-xl font-bold text-indigo-950"
                   />
                   <Input 
                     value={editedTitle} 
                     onChange={(e) => setEditedTitle(e.target.value)}
                     placeholder="Professional Title"
-                    className="bg-white/5 border-white/10 text-center text-sm"
+                    className="bg-white/40 border-indigo-900/10 text-center text-sm text-indigo-900/60"
                   />
                   <div className="flex justify-center gap-2 mt-2">
                     <button
                       onClick={() => setEditedRole('freelancer')}
-                      className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all ${editedRole === 'freelancer' ? 'bg-primary text-white' : 'bg-white/5 text-white/30'}`}
+                      className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all ${editedRole === 'freelancer' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'bg-indigo-900/5 text-indigo-900/30'}`}
                     >
                       {t('freelancer_role').toUpperCase()}
                     </button>
                     <button
                       onClick={() => setEditedRole('client')}
-                      className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all ${editedRole === 'client' ? 'bg-primary text-white' : 'bg-white/5 text-white/30'}`}
+                      className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all ${editedRole === 'client' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'bg-indigo-900/5 text-indigo-900/30'}`}
                     >
                       {t('hire_role').toUpperCase()}
                     </button>
@@ -318,37 +318,37 @@ export function ProfilePage() {
                 </div>
               ) : (
                 <>
-                  <h2 className="text-2xl font-bold mb-1">{profile?.full_name || t('no_name')}</h2>
+                  <h2 className="text-2xl font-bold mb-1 text-indigo-950 text-sharp">{profile?.full_name || t('no_name')}</h2>
                   <div className="flex items-center justify-center gap-2 mb-6">
                     <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5 text-[10px] uppercase font-bold tracking-widest">{profile?.role === 'client' ? t('hire_role') : t('freelancer_role')}</Badge>
-                    <p className="text-white/50 text-sm">{profile?.title || t('prof_creator')}</p>
+                    <p className="text-indigo-950/40 text-sm font-bold text-sharp uppercase tracking-tight">{profile?.title || t('prof_creator')}</p>
                   </div>
                 </>
               )}
 
-              <div className="grid grid-cols-3 gap-2 sm:gap-4 py-4 sm:py-6 border-y border-white/5 my-6">
+              <div className="grid grid-cols-3 gap-2 sm:gap-4 py-4 sm:py-6 border-y border-indigo-900/5 my-6 leading-none">
                 <div>
-                  <p className="text-lg sm:text-xl font-bold">4.9</p>
-                  <p className="text-[9px] sm:text-[10px] text-white/30 uppercase tracking-tighter">{t('rating')}</p>
+                  <p className="text-lg sm:text-xl font-bold text-indigo-950 text-sharp">4.9</p>
+                  <p className="text-[9px] sm:text-[10px] text-indigo-900/40 uppercase tracking-tighter text-sharp">Rating</p>
                 </div>
                 <div>
-                  <p className="text-lg sm:text-xl font-bold">12</p>
-                  <p className="text-[9px] sm:text-[10px] text-white/30 uppercase tracking-tighter">{t('profile_jobs')}</p>
+                  <p className="text-lg sm:text-xl font-bold text-indigo-950 text-sharp">12</p>
+                  <p className="text-[9px] sm:text-[10px] text-indigo-900/40 uppercase tracking-tighter text-sharp">Jobs</p>
                 </div>
                 <div>
                   {isEditing ? (
                     <div className="flex items-center justify-center gap-1">
-                      <span className="text-xs sm:text-sm text-white/40">$</span>
+                      <span className="text-xs sm:text-sm text-indigo-900/40">$</span>
                       <Input 
                         value={editedRate} 
                         onChange={(e) => setEditedRate(e.target.value)}
-                        className="bg-transparent border-none p-0 w-8 h-auto font-bold text-center text-lg sm:text-xl"
+                        className="bg-transparent border-none p-0 w-8 h-auto font-bold text-center text-lg sm:text-xl text-indigo-950"
                       />
                     </div>
                   ) : (
-                    <p className="text-lg sm:text-xl font-bold">${profile?.hourly_rate || '45'}</p>
+                    <p className="text-lg sm:text-xl font-bold text-indigo-950 text-sharp">${profile?.hourly_rate || '45'}</p>
                   )}
-                  <p className="text-[9px] sm:text-[10px] text-white/30 uppercase tracking-tighter">{t('rate_h')}</p>
+                  <p className="text-[9px] sm:text-[10px] text-indigo-900/40 uppercase tracking-tighter text-sharp">Rate/h</p>
                 </div>
               </div>
 
@@ -358,8 +358,12 @@ export function ProfilePage() {
                     <Check className="w-4 h-4 mr-2" /> {t('save_changes')}
                   </Button>
                 ) : (
-                  <Button onClick={() => setIsEditing(true)} className="flex-1 glass border-white/10 hover:bg-white/10 h-12 rounded-xl">
-                    <Edit3 className="w-4 h-4 mr-2" /> {t('edit_profile')}
+                  <Button 
+                    onClick={() => setIsEditing(true)} 
+                    variant="outline"
+                    className="flex-1 border-indigo-900/10 hover:bg-white/40 text-indigo-950 h-12 rounded-xl font-bold text-sharp"
+                  >
+                    <Edit3 className="w-4 h-4 mr-2 text-primary" /> {t('edit_profile')}
                   </Button>
                 )}
               </div>
@@ -369,55 +373,55 @@ export function ProfilePage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="glass p-8 rounded-[32px] border-white/10"
+              className="glass p-8 rounded-[32px] border-white/10 shadow-xl"
             >
-              <h3 className="font-bold mb-6 flex items-center">
+              <h3 className="font-bold mb-6 flex items-center text-indigo-950 text-sharp uppercase tracking-widest text-sm">
                 <Globe className="w-4 h-4 mr-2 text-primary" /> {t('details')}
               </h3>
               <div className="space-y-4">
                 <div className="flex items-center gap-4 group">
-                  <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center border border-white/10 group-hover:border-primary/50 transition-colors">
-                    <Mail className="w-3.5 h-3.5 text-white/40 group-hover:text-primary" />
+                  <div className="w-8 h-8 rounded-lg bg-indigo-900/5 flex items-center justify-center border border-indigo-900/5 group-hover:border-primary/50 transition-colors">
+                    <Mail className="w-3.5 h-3.5 text-indigo-900/60 group-hover:text-primary" />
                   </div>
-                  <span className="text-sm text-white/60 truncate">{user?.email}</span>
+                  <span className="text-sm text-indigo-950/60 font-bold truncate text-sharp">{user?.email}</span>
                 </div>
                 
                 <div className="flex items-center gap-4 group">
-                  <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center border border-white/10 group-hover:border-primary/50 transition-colors">
-                    <MapPin className="w-3.5 h-3.5 text-white/40 group-hover:text-primary" />
+                  <div className="w-8 h-8 rounded-lg bg-indigo-900/5 flex items-center justify-center border border-indigo-900/5 group-hover:border-primary/50 transition-colors">
+                    <MapPin className="w-3.5 h-3.5 text-indigo-900/60 group-hover:text-primary" />
                   </div>
                   {isEditing ? (
                     <Input 
                       value={editedLocation} 
                       onChange={(e) => setEditedLocation(e.target.value)}
-                      className="bg-transparent border-none p-0 h-auto text-sm"
+                      className="bg-white/40 border-indigo-900/10 p-2 h-8 text-sm text-indigo-950 font-bold rounded-lg"
                     />
                   ) : (
-                    <span className="text-sm text-white/60">{profile?.location || t('uzbekistan')}</span>
+                    <span className="text-sm text-indigo-950/60 font-bold text-sharp">{profile?.location || t('uzbekistan')}</span>
                   )}
                 </div>
 
-                <div className="pt-6 border-t border-white/5 flex justify-center gap-6">
+                <div className="pt-6 border-t border-indigo-900/5 flex justify-center gap-6">
                   {isEditing ? (
                     <div className="w-full space-y-3">
                       <div className="flex items-center gap-3">
-                        <Github className="w-4 h-4" />
-                        <Input value={editedGithub} onChange={(e) => setEditedGithub(e.target.value)} placeholder="Github URL" className="bg-white/5 h-8 text-xs" />
+                        <Github className="w-4 h-4 text-indigo-900/40" />
+                        <Input value={editedGithub} onChange={(e) => setEditedGithub(e.target.value)} placeholder="Github URL" className="bg-white/5 h-8 text-xs text-indigo-950" />
                       </div>
                       <div className="flex items-center gap-3">
-                        <Twitter className="w-4 h-4" />
-                        <Input value={editedTwitter} onChange={(e) => setEditedTwitter(e.target.value)} placeholder="Twitter URL" className="bg-white/5 h-8 text-xs" />
+                        <Twitter className="w-4 h-4 text-indigo-900/40" />
+                        <Input value={editedTwitter} onChange={(e) => setEditedTwitter(e.target.value)} placeholder="Twitter URL" className="bg-white/5 h-8 text-xs text-indigo-950" />
                       </div>
                       <div className="flex items-center gap-3">
-                        <Linkedin className="w-4 h-4" />
-                        <Input value={editedLinkedin} onChange={(e) => setEditedLinkedin(e.target.value)} placeholder="LinkedIn URL" className="bg-white/5 h-8 text-xs" />
+                        <Linkedin className="w-4 h-4 text-indigo-900/40" />
+                        <Input value={editedLinkedin} onChange={(e) => setEditedLinkedin(e.target.value)} placeholder="LinkedIn URL" className="bg-white/5 h-8 text-xs text-indigo-950" />
                       </div>
                     </div>
                   ) : (
                     <>
-                      <motion.a whileHover={{ y: -3 }} href={profile?.socials?.github} className="text-white/30 hover:text-white"><Github className="w-5 h-5" /></motion.a>
-                      <motion.a whileHover={{ y: -3 }} href={profile?.socials?.twitter} className="text-white/30 hover:text-white"><Twitter className="w-5 h-5" /></motion.a>
-                      <motion.a whileHover={{ y: -3 }} href={profile?.socials?.linkedin} className="text-white/30 hover:text-white"><Linkedin className="w-5 h-5" /></motion.a>
+                      <motion.a whileHover={{ y: -3 }} href={profile?.socials?.github} className="text-indigo-900/30 hover:text-primary"><Github className="w-5 h-5" /></motion.a>
+                      <motion.a whileHover={{ y: -3 }} href={profile?.socials?.twitter} className="text-indigo-900/30 hover:text-primary"><Twitter className="w-5 h-5" /></motion.a>
+                      <motion.a whileHover={{ y: -3 }} href={profile?.socials?.linkedin} className="text-indigo-900/30 hover:text-primary"><Linkedin className="w-5 h-5" /></motion.a>
                     </>
                   )}
                 </div>
@@ -453,7 +457,7 @@ export function ProfilePage() {
                   className="bg-white/5 border-white/10 min-h-[200px] text-lg leading-relaxed rounded-2xl"
                 />
               ) : (
-                <p className="text-white/60 text-lg leading-relaxed whitespace-pre-wrap">
+                  <p className="text-indigo-950/60 text-lg leading-relaxed whitespace-pre-wrap text-sharp font-normal">
                   {profile?.bio || t('no_bio')}
                 </p>
               )}
@@ -466,7 +470,7 @@ export function ProfilePage() {
               className="glass p-10 rounded-[40px] border-white/10"
             >
               <div className="flex items-center justify-between mb-8">
-                <h3 className="text-2xl font-bold">{t('skills_expertise')}</h3>
+                <h3 className="text-2xl font-bold text-indigo-950 text-sharp">{t('skills_expertise')}</h3>
                 <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
                   <Star className="w-5 h-5 text-primary" />
                 </div>
@@ -478,9 +482,9 @@ export function ProfilePage() {
                     value={editedSkills}
                     onChange={(e) => setEditedSkills(e.target.value)}
                     placeholder={t('skills_placeholder')}
-                    className="bg-white/5 border-white/10 h-14 text-lg rounded-xl"
+                    className="bg-white/40 border-indigo-900/10 h-14 text-lg rounded-xl text-indigo-950 font-bold"
                   />
-                  <p className="text-xs text-white/30">Skills should be separated by commas.</p>
+                  <p className="text-xs text-indigo-900/40 font-bold uppercase tracking-tight text-sharp">Skills should be separated by commas.</p>
                 </div>
               ) : (
                 <div className="flex flex-wrap gap-4">
@@ -488,11 +492,11 @@ export function ProfilePage() {
                     <motion.div 
                       key={skill}
                       whileHover={{ scale: 1.05 }}
-                      className="px-6 py-3 rounded-2xl bg-white/5 border border-white/10 text-white/80 font-medium hover:border-primary/50 transition-all cursor-default"
+                      className="px-6 py-3 rounded-2xl bg-indigo-900/10 border border-indigo-900/10 text-indigo-950 font-black hover:border-primary/50 transition-all cursor-default text-sharp shadow-sm"
                     >
                       {skill}
                     </motion.div>
-                  )) || <p className="text-white/20 font-medium">{t('no_skills')}</p>}
+                  )) || <p className="text-indigo-950/20 font-black">{t('no_skills')}</p>}
                 </div>
               )}
             </motion.div>
@@ -504,7 +508,7 @@ export function ProfilePage() {
               className="glass p-10 rounded-[40px] border-white/10"
             >
               <div className="flex items-center justify-between mb-8">
-                <h3 className="text-2xl font-bold">{t('prof_history')}</h3>
+                <h3 className="text-2xl font-bold text-indigo-950 text-sharp">{t('prof_history')}</h3>
                 <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
                   <Briefcase className="w-5 h-5 text-primary" />
                 </div>
@@ -514,15 +518,15 @@ export function ProfilePage() {
                 {[1, 2].map((i) => (
                   <div key={i} className="flex gap-6 group">
                     <div className="relative">
-                      <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center border border-white/10 group-hover:border-primary/50 transition-all z-10 relative">
-                        <Award className="w-6 h-6 text-white/40 group-hover:text-primary" />
+                      <div className="w-12 h-12 rounded-2xl bg-indigo-900/5 flex items-center justify-center border border-indigo-900/5 group-hover:border-primary/50 transition-all z-10 relative">
+                        <Award className="w-6 h-6 text-indigo-900/50 group-hover:text-primary" />
                       </div>
-                      {i === 1 && <div className="absolute top-12 bottom-[-32px] left-1/2 -translate-x-1/2 w-px bg-white/5" />}
+                      {i === 1 && <div className="absolute top-12 bottom-[-32px] left-1/2 -translate-x-1/2 w-px bg-indigo-900/5" />}
                     </div>
                     <div className="space-y-1">
-                      <h4 className="font-bold text-lg">Senior Product Designer</h4>
-                      <p className="text-primary text-sm font-medium">Meta Platforms • 2022 - Present</p>
-                      <p className="text-white/40 text-sm max-w-xl">Led the redesign of the main interface, increasing user engagement by 45%. Collaborated with global teams.</p>
+                      <h4 className="font-bold text-lg text-indigo-950 text-sharp">Senior Product Designer</h4>
+                      <p className="text-primary text-sm font-black uppercase tracking-widest shadow-sm">Meta Platforms • 2022 - Present</p>
+                      <p className="text-indigo-950/60 text-sm max-w-xl font-bold text-sharp">Led the redesign of the main interface, increasing user engagement by 45%. Collaborated with global teams.</p>
                     </div>
                   </div>
                 ))}

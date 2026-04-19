@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { db, auth } from '@/lib/firebase';
-import { collection, query, getDocs, orderBy } from 'firebase/firestore';
+import { collection, query, onSnapshot, orderBy } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { Link } from 'react-router-dom';
 import { Job } from '@/types';
@@ -25,33 +25,30 @@ export function JobsPage() {
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       setUser(user);
     });
-    fetchJobs();
-    return () => unsubscribe();
-  }, []);
 
-  const fetchJobs = async () => {
-    try {
-      setLoading(true);
-      
-      const jobsRef = collection(db, 'jobs');
-      const q = query(jobsRef, orderBy('created_at', 'desc'));
-      const querySnapshot = await getDocs(q);
-      
-      if (querySnapshot.empty) {
+    setLoading(true);
+    const jobsRef = collection(db, 'jobs');
+    const q = query(jobsRef, orderBy('created_at', 'desc'));
+    
+    const unsubscribeJobs = onSnapshot(q, (snapshot) => {
+      if (snapshot.empty) {
         console.warn('Firebase empty (falling back to mock data)');
-        // Fallback to mock data
         const mockJobs: Job[] = [
           {
             id: '1',
             title: 'Senior React Developer for Fintech App',
             description: 'We are looking for an expert React developer to build a high-performance dashboard with real-time charts and glassmorphism UI.',
-            price: 5000,
+            budget: 5000,
+            budget_type: 'fixed',
             category: 'Development',
+            experience_level: 'expert',
+            skills_required: ['React', 'TypeScript', 'Tailwind CSS', 'Framer Motion'],
             client_id: 'c1',
             client_name: 'Nexus Labs',
+            status: 'open',
             created_at: new Date().toISOString(),
             is_featured: true
           },
@@ -59,29 +56,38 @@ export function JobsPage() {
             id: '2',
             title: 'Futuristic UI/UX Designer',
             description: 'Need a designer who specializes in Apple-style glassmorphism and liquid glass aesthetics for a new SaaS platform.',
-            price: 3500,
+            budget: 3500,
+            budget_type: 'fixed',
             category: 'Design',
+            experience_level: 'intermediate',
+            skills_required: ['Figma', 'UI/UX', 'Interaction Design'],
             client_id: 'c2',
             client_name: 'Glassy Inc',
+            status: 'open',
             created_at: new Date().toISOString(),
             is_featured: false
           }
         ];
         setJobs(mockJobs);
       } else {
-        const jobsData = querySnapshot.docs.map(doc => ({
+        const jobsData = snapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         })) as Job[];
         setJobs(jobsData);
       }
-    } catch (error: any) {
-      console.error('Firebase fetch error:', error);
-      toast.error('Failed to fetch jobs');
-    } finally {
       setLoading(false);
-    }
-  };
+    }, (error) => {
+      console.error('Firebase snapshot error:', error);
+      toast.error('Real-time sync failed. Please refresh.');
+      setLoading(false);
+    });
+
+    return () => {
+      unsubscribeAuth();
+      unsubscribeJobs();
+    };
+  }, []);
 
   const handleApply = (job: Job) => {
     if (!user) {
@@ -107,8 +113,8 @@ export function JobsPage() {
       
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-12">
         <div className="text-left w-full md:w-auto">
-          <h1 className="text-3xl md:text-4xl font-display font-bold mb-2 glow-text">{t('browse_jobs')}</h1>
-          <p className="text-white/50 text-sm md:text-base">{t('jobs_find_desc')}</p>
+          <h1 className="text-3xl md:text-4xl font-display font-bold mb-2 text-indigo-950 text-sharp">{t('browse_jobs')}</h1>
+          <p className="text-indigo-900/40 text-sm md:text-base text-sharp">{t('jobs_find_desc')}</p>
         </div>
         
         <div className="flex flex-col sm:flex-row w-full md:w-auto gap-3 md:gap-4">
@@ -143,9 +149,9 @@ export function JobsPage() {
                 { label: t('cat_writing'), id: 'Writing' },
                 { label: t('cat_video'), id: 'Video' }
               ].map(cat => (
-                <div key={cat.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-white/5 cursor-pointer transition-colors group">
-                  <span className="text-white/70 group-hover:text-white">{cat.label}</span>
-                  <Badge variant="outline" className="border-white/10 text-white/40">12</Badge>
+                <div key={cat.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-white/40 cursor-pointer transition-colors group">
+                  <span className="text-indigo-900/60 group-hover:text-primary font-medium text-sharp">{cat.label}</span>
+                  <Badge variant="outline" className="border-indigo-900/10 text-indigo-900/40">12</Badge>
                 </div>
               ))}
             </CardContent>
@@ -195,8 +201,8 @@ export function JobsPage() {
                         <Briefcase className="w-6 h-6 text-primary" />
                       </div>
                       <div>
-                        <CardTitle className="text-xl mb-1 group-hover:text-primary transition-colors">{job.title}</CardTitle>
-                        <div className="flex items-center gap-4 text-sm text-white/40">
+                        <CardTitle className="text-xl mb-1 text-indigo-950 group-hover:text-primary transition-colors text-sharp">{job.title}</CardTitle>
+                        <div className="flex items-center gap-4 text-sm text-indigo-900/40 font-medium text-sharp">
                           <span className="flex items-center gap-1">
                             <MapPin className="w-3 h-3" /> {t('remote')}
                           </span>
@@ -211,17 +217,17 @@ export function JobsPage() {
                     )}
                   </CardHeader>
                   <CardContent className="pt-4">
-                    <p className="text-white/60 line-clamp-2 mb-6 leading-relaxed">
+                    <p className="text-indigo-950/60 line-clamp-2 mb-6 leading-relaxed text-sharp">
                       {job.description}
                     </p>
                     <div className="flex flex-wrap gap-2">
-                      <Badge variant="secondary" className="bg-white/5 border-white/10 text-white/70">{t(`cat_${job.category?.toLowerCase() || 'dev'}`)}</Badge>
+                      <Badge variant="secondary" className="bg-white/40 border-indigo-900/10 text-indigo-900/60 text-sharp">{t(`cat_${job.category?.toLowerCase() || 'dev'}`)}</Badge>
                     </div>
                   </CardContent>
-                  <CardFooter className="flex items-center justify-between border-t border-white/5 pt-6">
+                  <CardFooter className="flex items-center justify-between border-t border-indigo-900/5 pt-6">
                     <div className="flex items-center gap-2">
-                      <span className="text-2xl font-bold text-white">${job.budget}</span>
-                      <span className="text-white/40 text-sm">/ {job.budget_type === 'hourly' ? t('hr') : t('project')}</span>
+                      <span className="text-2xl font-bold text-indigo-950 text-sharp">${job.budget}</span>
+                      <span className="text-indigo-900/40 text-sm font-medium text-sharp">/ {job.budget_type === 'hourly' ? t('hr') : t('project')}</span>
                     </div>
                     <div className="flex gap-2">
                       <Link to={`/jobs/${job.id}`}>

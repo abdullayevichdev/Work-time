@@ -9,6 +9,18 @@ export interface UserProfile {
   bio?: string;
   skills?: string[];
   rating?: number;
+  hourly_rate?: number;
+  location?: string;
+  socials?: {
+    github?: string;
+    twitter?: string;
+    linkedin?: string;
+  };
+  stats?: {
+    rating: number;
+    completed_jobs: number;
+    total_earned: number;
+  };
   is_premium: boolean;
   is_admin?: boolean;
   created_at: string;
@@ -38,20 +50,30 @@ export interface Job {
   id: string;
   title: string;
   description: string;
-  price: number;
+  budget: number;
+  budget_type: 'fixed' | 'hourly';
   category: string;
+  experience_level: 'entry' | 'intermediate' | 'expert';
+  skills_required: string[];
   client_id: string;
   client_name: string;
   client_avatar?: string;
+  status: 'open' | 'closed';
   created_at: string;
   is_featured: boolean;
 }
 
-export interface Application {
+export interface Proposal {
   id: string;
   job_id: string;
+  job_title: string;
+  client_id: string;
   freelancer_id: string;
-  message: string;
+  freelancer_name: string;
+  freelancer_avatar: string;
+  bid_amount: number;
+  estimated_days: number;
+  cover_letter: string;
   status: 'pending' | 'accepted' | 'rejected';
   created_at: string;
 }

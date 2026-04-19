@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { db, auth } from '@/lib/firebase';
-import { collection, query, where, getDocs, orderBy, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy, doc, updateDoc } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -13,39 +13,37 @@ export function ApplicationsList() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchApplications();
-  }, []);
-
-  const fetchApplications = async () => {
     if (!auth.currentUser) return;
 
-    try {
-      setLoading(true);
-      const q = query(
-        collection(db, 'applications'),
-        where('client_id', '==', auth.currentUser.uid),
-        orderBy('created_at', 'desc')
-      );
-      const querySnapshot = await getDocs(q);
-      const apps = querySnapshot.docs.map(doc => ({
+    setLoading(true);
+    const q = query(
+      collection(db, 'proposals'),
+      where('client_id', '==', auth.currentUser.uid),
+      orderBy('created_at', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const apps = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
       setApplications(apps);
-    } catch (error) {
-      console.error('Error fetching applications:', error);
-    } finally {
       setLoading(false);
-    }
-  };
+    }, (error) => {
+      console.error('Error fetching proposals:', error);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const handleStatusUpdate = async (appId: string, status: 'accepted' | 'rejected') => {
     try {
-      await updateDoc(doc(db, 'applications', appId), { status });
+      await updateDoc(doc(db, 'proposals', appId), { status });
       setApplications(applications.map(app => 
         app.id === appId ? { ...app, status } : app
       ));
-      toast.success(`Application ${status}`);
+      toast.success(`Proposal ${status}`);
     } catch (error) {
       console.error('Error updating status:', error);
       toast.error('Failed to update status');
@@ -92,8 +90,8 @@ export function ApplicationsList() {
                   </Badge>
                 </div>
                 
-                <p className="text-white/60 text-sm leading-relaxed mb-6 bg-white/5 p-4 rounded-xl border border-white/5">
-                  "{app.message}"
+                <p className="text-indigo-950/60 text-sm leading-relaxed mb-6 bg-indigo-900/5 p-4 rounded-xl border border-indigo-900/5 text-sharp">
+                  "{app.cover_letter || app.message}"
                 </p>
                 
                 <div className="flex items-center justify-between">

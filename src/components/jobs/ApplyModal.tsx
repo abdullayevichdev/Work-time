@@ -31,7 +31,11 @@ export function ApplyModal({ isOpen, onClose, job }: ApplyModalProps) {
     try {
       await addDoc(collection(db, 'proposals'), {
         job_id: job.id,
+        client_id: job.client_id,
         freelancer_id: auth.currentUser.uid,
+        freelancer_name: auth.currentUser.displayName || 'Anonymous',
+        freelancer_avatar: auth.currentUser.photoURL || '',
+        job_title: job.title,
         bid_amount: Number(formData.bid_amount),
         estimated_days: Number(formData.estimated_days),
         cover_letter: formData.cover_letter,

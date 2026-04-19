@@ -173,7 +173,7 @@ export function AuthPage({ mode }: AuthPageProps) {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 sm:p-6 pt-24 md:pt-28 overflow-hidden relative">
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/10 blur-[120px] rounded-full animate-pulse pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] md:w-[600px] h-[300px] md:h-[600px] bg-primary/10 blur-[80px] md:blur-[120px] rounded-full animate-pulse pointer-events-none" />
       
       <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center relative z-10">
         {/* Left Side: Auth Form */}
@@ -191,60 +191,63 @@ export function AuthPage({ mode }: AuthPageProps) {
           transition={{ duration: 0.8, ease: "easeOut" }}
           className="w-full max-w-md mx-auto lg:mx-0"
         >
-          <div className="glass p-6 sm:p-10 rounded-[2rem] sm:rounded-[2.5rem] border-white/10 shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 blur-3xl -mr-16 -mt-16" />
+          <div className="liquid-glass p-5 sm:p-10 rounded-[2.5rem] border-white/10 shadow-2xl relative group">
+            <div className="specular-glow opacity-30" />
+            <div className="absolute top-0 right-0 w-48 h-48 bg-primary/20 blur-[80px] -mr-24 -mt-24 pointer-events-none" />
             
-            <div className="mb-8 sm:mb-10 text-center lg:text-left">
-              <h2 className="text-3xl sm:text-4xl font-display font-bold mb-3 tracking-tight">
+            <div className="mb-8 sm:mb-12 text-center lg:text-left relative z-10">
+              <h2 className="text-3xl sm:text-4xl font-display font-bold mb-3 tracking-tighter text-sharp">
                 {mode === 'login' ? t('login') : t('signup')}
               </h2>
-              <p className="text-white/50 text-lg">
+              <p className="text-indigo-950/40 text-lg font-light text-sharp">
                 {mode === 'login' ? t('auth_login_subtitle') : t('auth_signup_subtitle')}
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 mb-8">
+            <div className="grid grid-cols-2 gap-4 mb-10 relative z-10">
               <Button 
                 type="button"
                 variant="ghost" 
-                className="glass border-white/10 hover:bg-white/10 h-14 relative group overflow-hidden rounded-2xl"
+                className="liquid-glass border-white/10 hover:bg-white/10 h-14 relative group overflow-hidden rounded-2xl transition-all hover:scale-105 active:scale-95"
                 onClick={handleGoogleSignIn}
                 disabled={loading}
               >
+                <div className="specular-glow opacity-20" />
                 <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-6 h-6" alt="Google" />
               </Button>
 
               <Button 
                 type="button"
                 variant="ghost" 
-                className="glass border-white/10 hover:bg-white/10 h-14 relative group overflow-hidden rounded-2xl"
+                className="liquid-glass border-white/10 hover:bg-white/10 h-14 relative group overflow-hidden rounded-2xl transition-all hover:scale-105 active:scale-95"
                 onClick={handleAppleSignIn}
                 disabled={loading}
               >
-                <svg viewBox="0 0 384 512" className="w-5 h-5 fill-current">
+                <div className="specular-glow opacity-20" />
+                <svg viewBox="0 0 384 512" className="w-5 h-5 fill-current text-white">
                   <path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-48.7-20.7-82.6-20.7-43.4.6-83.3 25.9-105.6 64.7-44.5 77-11.4 190.6 31.5 252.5 21 30.2 46.1 63.9 77.7 62.7 30.7-1.1 42.4-19.6 79.7-19.6 37.1 0 48.3 19.6 80.2 18.9 32.2-1.1 54.2-30.2 75-60.6 24.1-35.2 33.9-69.4 34.2-71.1-.7-.3-66.5-25.5-66.7-103.1zM285.4 92.1c16.1-20.1 27-48.1 24-76.1-23.1 1-52.1 16.1-68.7 34.1-15 16.1-28.1 44.1-25.1 72.1 26.1 2 53.7-11 69.8-30.1z"/>
                 </svg>
               </Button>
             </div>
 
             <div className="relative mb-8 flex items-center gap-4">
-              <div className="flex-1 h-px bg-white/10" />
-              <span className="text-[10px] text-white/30 uppercase tracking-[0.2em] font-bold">{t("auth_or_email")}</span>
-              <div className="flex-1 h-px bg-white/10" />
+              <div className="flex-1 h-px bg-indigo-900/5" />
+              <span className="text-[10px] text-indigo-900/20 uppercase tracking-[0.2em] font-bold text-sharp">{t("auth_or_email")}</span>
+              <div className="flex-1 h-px bg-indigo-900/5" />
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
               {mode === 'signup' && (
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="name" className="text-xs font-bold uppercase tracking-wider text-white/50">{t("full_name")}</Label>
+                    <Label htmlFor="name" className="text-xs font-bold uppercase tracking-wider text-indigo-900/40 text-sharp">{t("full_name")}</Label>
                     <div className="relative">
-                      <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                      <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-900/30" />
                       <Input
                         id="name"
                         type="text"
                         placeholder="Abdulxay Avazxanov"
-                        className="pl-11 h-13 bg-white/5 border-white/10 focus:border-primary rounded-xl transition-all"
+                        className="pl-11 h-13 bg-white/40 border-indigo-900/5 focus:border-primary rounded-xl transition-all text-indigo-950 placeholder:text-indigo-900/20"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         required
@@ -253,12 +256,12 @@ export function AuthPage({ mode }: AuthPageProps) {
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-xs font-bold uppercase tracking-wider text-white/50">{t("i_want_to")}</Label>
+                    <Label className="text-xs font-bold uppercase tracking-wider text-indigo-900/40 text-sharp">{t("i_want_to")}</Label>
                     <div className="grid grid-cols-2 gap-3">
                       <button
                         type="button"
                         onClick={() => setRole('freelancer')}
-                        className={`p-4 rounded-xl border-2 transition-all text-sm font-bold flex flex-col items-center gap-2 ${role === 'freelancer' ? 'bg-primary/20 border-primary text-primary' : 'bg-white/5 border-white/10 text-white/40 hover:bg-white/10'}`}
+                        className={`p-4 rounded-xl border-2 transition-all text-sm font-bold flex flex-col items-center gap-2 ${role === 'freelancer' ? 'bg-primary/20 border-primary text-primary' : 'bg-white/40 border-indigo-900/5 text-indigo-900/40 hover:bg-white/60'}`}
                       >
                         <User className="w-5 h-5" />
                         {t("freelancer_role")}
@@ -266,7 +269,7 @@ export function AuthPage({ mode }: AuthPageProps) {
                       <button
                         type="button"
                         onClick={() => setRole('client')}
-                        className={`p-4 rounded-xl border-2 transition-all text-sm font-bold flex flex-col items-center gap-2 ${role === 'client' ? 'bg-primary/20 border-primary text-primary' : 'bg-white/5 border-white/10 text-white/40 hover:bg-white/10'}`}
+                        className={`p-4 rounded-xl border-2 transition-all text-sm font-bold flex flex-col items-center gap-2 ${role === 'client' ? 'bg-primary/20 border-primary text-primary' : 'bg-white/40 border-indigo-900/5 text-indigo-900/40 hover:bg-white/60'}`}
                       >
                         <Briefcase className="w-5 h-5" />
                         {t("hire_role")}
@@ -277,14 +280,14 @@ export function AuthPage({ mode }: AuthPageProps) {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-xs font-bold uppercase tracking-wider text-white/50">{t("email_address")}</Label>
+                <Label htmlFor="email" className="text-xs font-bold uppercase tracking-wider text-indigo-900/40 text-sharp">{t("email_address")}</Label>
                 <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-900/30" />
                   <Input
                     id="email"
                     type="email"
                     placeholder="name@example.com"
-                    className="pl-11 h-13 bg-white/5 border-white/10 focus:border-primary rounded-xl transition-all"
+                    className="pl-11 h-13 bg-white/40 border-indigo-900/5 focus:border-primary rounded-xl transition-all text-indigo-950 placeholder:text-indigo-900/20"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -294,18 +297,18 @@ export function AuthPage({ mode }: AuthPageProps) {
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="password" className="text-xs font-bold uppercase tracking-wider text-white/50">{t("password")}</Label>
+                  <Label htmlFor="password" className="text-xs font-bold uppercase tracking-wider text-indigo-900/40 text-sharp">{t("password")}</Label>
                   {mode === 'login' && (
-                    <button type="button" className="text-[10px] font-bold text-primary hover:underline">{t('forgot_password')}</button>
+                    <button type="button" className="text-[10px] font-bold text-primary hover:underline text-sharp">{t('forgot_password')}</button>
                   )}
                 </div>
                 <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-900/30" />
                   <Input
                     id="password"
                     type="password"
                     placeholder="••••••••"
-                    className="pl-11 h-13 bg-white/5 border-white/10 focus:border-primary rounded-xl transition-all"
+                    className="pl-11 h-13 bg-white/40 border-indigo-900/5 focus:border-primary rounded-xl transition-all text-indigo-950"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
@@ -320,7 +323,7 @@ export function AuthPage({ mode }: AuthPageProps) {
             </form>
 
             <div className="mt-10 text-center">
-              <p className="text-white/40 text-sm">
+              <p className="text-indigo-950/40 text-sm text-sharp">
                 {mode === 'login' ? t('no_account') : t('have_account')}{' '}
                 <Link to={mode === 'login' ? '/signup' : '/login'} className="text-primary hover:text-primary/80 font-bold transition-colors">
                   {mode === 'login' ? t('signup') : t('login')}
@@ -337,38 +340,27 @@ export function AuthPage({ mode }: AuthPageProps) {
           transition={{ duration: 0.8, ease: "easeOut" }}
           className="hidden lg:block space-y-8"
         >
-          <div className="relative aspect-square rounded-[3rem] overflow-hidden glass border-white/10 group shadow-2xl">
-            <div className="absolute inset-0 bg-gradient-to-tr from-primary/60 to-transparent z-10 opacity-70" />
+          <div className="relative aspect-square rounded-[3rem] overflow-hidden liquid-glass border-white/10 group shadow-2xl">
+            <div className="specular-glow opacity-40 z-30" />
+            <div className="absolute inset-0 bg-gradient-to-tr from-primary/40 to-transparent z-10 opacity-70" />
             <img 
               src="https://images.unsplash.com/photo-1573164713714-d95e436ab8d6?auto=format&fit=crop&q=80&w=1200" 
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[3000ms]"
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-[4000ms]"
               alt="WorkTime Auth Visual"
               referrerPolicy="no-referrer"
             />
-            <div className="absolute inset-0 bg-black/20 z-0" />
-            
             <div className="absolute inset-x-8 bottom-12 z-20 space-y-6">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 text-white text-xs font-black uppercase tracking-[0.2em]">
-                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                {t('future_of_work')}
+              <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full liquid-glass border-white/20 text-white text-[10px] font-black uppercase tracking-[0.3em]">
+                <div className="specular-glow opacity-30" />
+                <div className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                <span className="text-sharp">{t('future_of_work')}</span>
               </div>
-              <h1 className="text-5xl font-display font-bold text-white leading-tight drop-shadow-2xl">
+              <h1 className="text-5xl font-display font-bold text-white leading-tight drop-shadow-2xl text-sharp">
                 {mode === 'signup' ? t('auth_signup_cta') : t('auth_login_cta')}
               </h1>
-              <p className="text-lg text-white/80 font-medium leading-relaxed max-w-sm drop-shadow-lg">
+              <p className="text-lg text-white/90 font-medium leading-relaxed max-w-sm drop-shadow-lg text-sharp">
                 {t('auth_description')}
               </p>
-              
-              <div className="flex items-center gap-10 pt-4 border-t border-white/10">
-                <div className="text-center md:text-left">
-                  <p className="text-2xl font-black text-white">50k+</p>
-                  <p className="text-[10px] text-white/50 uppercase tracking-widest font-bold">{t('active_talents')}</p>
-                </div>
-                <div className="text-center md:text-left">
-                  <p className="text-2xl font-black text-white">100k+</p>
-                  <p className="text-[10px] text-white/50 uppercase tracking-widest font-bold">{t('jobs_posted')}</p>
-                </div>
-              </div>
             </div>
           </div>
         </motion.div>

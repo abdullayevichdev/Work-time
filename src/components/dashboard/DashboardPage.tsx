@@ -70,7 +70,7 @@ export function DashboardPage() {
     const roleQueryField = profile.role === 'client' ? 'client_id' : 'freelancer_id';
     
     const appsQuery = query(
-      collection(db, 'applications'),
+      collection(db, 'proposals'),
       where(roleQueryField, '==', user.uid),
       orderBy('created_at', 'desc'),
       limit(10)
@@ -133,17 +133,17 @@ export function DashboardPage() {
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-8 relative z-10 w-full lg:w-auto">
           <div className="relative group">
             <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl group-hover:bg-primary/40 transition-all duration-500" />
-            <Avatar className="w-24 h-24 border-2 border-white/10 p-1 bg-[#030014] relative z-10">
+            <Avatar className="w-24 h-24 border-2 border-white/60 p-1 bg-white relative z-10 shadow-lg">
               <AvatarImage src={user?.photoURL || ''} />
               <AvatarFallback className="bg-primary/10 text-primary text-3xl font-display font-bold">
                 {profile?.full_name?.[0] || user?.email?.[0] || 'U'}
               </AvatarFallback>
             </Avatar>
-            <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-green-500 rounded-full border-4 border-[#030014] z-20" />
+            <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-emerald-500 rounded-full border-4 border-white z-20 shadow-sm" />
           </div>
           <div className="text-center sm:text-left space-y-2">
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3">
-              <h1 className="text-3xl md:text-4xl lg:text-5xl font-display font-bold tracking-tight text-white">
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-display font-bold tracking-tight text-indigo-950 text-sharp">
                 {t('welcome_back')} <span className="text-primary font-bold">{profile?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'User'}</span>!
               </h1>
               <div className="flex gap-2">
@@ -155,9 +155,9 @@ export function DashboardPage() {
                 )}
               </div>
             </div>
-            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 text-white/40 text-sm">
-              <Badge variant="outline" className="border-white/10 text-white/60 bg-white/5 backdrop-blur-md px-4 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase">{profile?.role === 'client' ? t('hire_role') : t('freelancer_role')}</Badge>
-              <span className="flex items-center gap-2 font-medium">
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 text-indigo-950/40 text-sm font-medium">
+              <Badge variant="outline" className="border-indigo-900/10 text-indigo-900/60 bg-white/40 backdrop-blur-md px-4 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase">{profile?.role === 'client' ? t('hire_role') : t('freelancer_role')}</Badge>
+              <span className="flex items-center gap-2">
                 <Clock className="w-4 h-4 text-primary" /> {t('last_active')} {t('just_now')}
               </span>
             </div>
@@ -200,11 +200,11 @@ export function DashboardPage() {
                 transition={{ delay: i * 0.05 }}
                 className="will-change-transform"
               >
-                <Card className="glass border-white/10 hover:border-white/20 transition-all group will-change-transform">
-                  <CardContent className="p-6 flex items-center justify-between">
+                <Card className="glass border-indigo-900/5 hover:border-primary/20 transition-all group will-change-transform">
+                  <CardContent className="p-5 sm:p-6 flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-white/40 mb-1">{stat.label}</p>
-                      <h3 className="text-3xl font-bold">{stat.value}</h3>
+                      <p className="text-[10px] sm:text-sm text-indigo-950/40 font-bold uppercase tracking-widest mb-1">{stat.label}</p>
+                      <h3 className="text-xl sm:text-3xl font-display font-bold text-indigo-900">{stat.value}</h3>
                     </div>
                     <div className={`w-12 h-12 rounded-xl ${stat.bg} flex items-center justify-center group-hover:scale-110 transition-transform`}>
                       <stat.icon className={`w-6 h-6 ${stat.color}`} />
@@ -237,33 +237,33 @@ export function DashboardPage() {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {activities.length > 0 ? activities.map((activity) => (
-                      <div key={activity.id} className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-white/10 transition-all group">
+                      <div key={activity.id} className="flex items-center justify-between p-4 rounded-2xl bg-indigo-900/5 border border-indigo-900/5 hover:border-primary/20 transition-all group">
                         <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center">
-                            {activity.type === 'application' ? <Briefcase className="w-5 h-5 text-blue-400" /> : 
-                             activity.type === 'message' ? <MessageSquare className="w-5 h-5 text-purple-400" /> : 
-                             <Star className="w-5 h-5 text-yellow-400" />}
+                          <div className="w-10 h-10 rounded-lg bg-white/40 flex items-center justify-center border border-indigo-900/5 shadow-sm">
+                            {activity.type === 'application' ? <Briefcase className="w-5 h-5 text-blue-500" /> : 
+                             activity.type === 'message' ? <MessageSquare className="w-5 h-5 text-purple-500" /> : 
+                             <Star className="w-5 h-5 text-yellow-500" />}
                           </div>
                           <div>
-                            <h4 className="font-medium group-hover:text-primary transition-colors">
+                            <h4 className="font-bold text-indigo-950 group-hover:text-primary transition-colors text-sharp">
                               {profile?.role === 'client' ? `Application for ${activity.job_title}` : `Applied to ${activity.job_title}`}
                             </h4>
-                            <p className="text-sm text-white/40">{new Date(activity.created_at).toLocaleDateString()}</p>
+                            <p className="text-sm text-indigo-900/40 font-medium text-sharp">{new Date(activity.created_at).toLocaleDateString()}</p>
                           </div>
                         </div>
-                        <Badge variant="outline" className={`capitalize border-white/10 ${
-                          activity.status === 'accepted' ? 'text-green-400 bg-green-400/10' :
-                          activity.status === 'rejected' ? 'text-red-400 bg-red-400/10' :
-                          'text-white/40'
+                        <Badge variant="outline" className={`capitalize border-indigo-900/10 font-bold ${
+                          activity.status === 'accepted' ? 'text-green-600 bg-green-500/10' :
+                          activity.status === 'rejected' ? 'text-red-600 bg-red-500/10' :
+                          'text-indigo-900/40'
                         }`}>
                           {activity.status}
                         </Badge>
                       </div>
                     )) : (
                       <div className="py-12 text-center">
-                        <Clock className="w-12 h-12 text-white/10 mx-auto mb-4" />
-                        <h4 className="text-lg font-medium text-white/60 mb-1">{t('no_activity')}</h4>
-                        <p className="text-sm text-white/30">{t('no_activity_desc')}</p>
+                        <Clock className="w-12 h-12 text-indigo-900/10 mx-auto mb-4" />
+                        <h4 className="text-lg font-bold text-indigo-950/60 mb-1 text-sharp">{t('no_activity')}</h4>
+                        <p className="text-sm text-indigo-950/30 text-sharp font-medium">{t('no_activity_desc')}</p>
                       </div>
                     )}
                   </CardContent>
@@ -288,7 +288,7 @@ export function DashboardPage() {
                         stroke="currentColor"
                         strokeWidth="8"
                         fill="transparent"
-                        className="text-white/5"
+                        className="text-indigo-900/5"
                       />
                       <circle
                         cx="64"
@@ -303,11 +303,11 @@ export function DashboardPage() {
                       />
                     </svg>
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-2xl font-bold">85%</span>
+                      <span className="text-2xl font-bold text-indigo-950 text-sharp">85%</span>
                     </div>
                   </div>
-                  <p className="text-sm text-white/50 text-center mb-6">{t('portfolio_cta')}</p>
-                  <Button variant="outline" className="w-full border-white/10 hover:bg-white/5">{t('complete_profile')}</Button>
+                  <p className="text-sm text-indigo-900/40 text-center mb-6 font-bold text-sharp uppercase tracking-tight">{t('portfolio_cta')}</p>
+                  <Button variant="outline" className="w-full border-indigo-900/10 hover:bg-white/40 text-indigo-900 font-bold">{t('complete_profile')}</Button>
                 </CardContent>
               </Card>
 
@@ -321,7 +321,7 @@ export function DashboardPage() {
                     { label: t('payment_settings'), icon: DollarSign },
                     { label: t('community_forum'), icon: Users },
                   ].map(link => (
-                    <Button key={link.label} variant="ghost" className="w-full justify-between hover:bg-white/5 text-white/70 hover:text-white">
+                    <Button key={link.label} variant="ghost" className="w-full justify-between hover:bg-white/40 text-indigo-950/60 hover:text-primary">
                       <div className="flex items-center gap-3">
                         <link.icon className="w-4 h-4" />
                         {link.label}

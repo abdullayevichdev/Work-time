@@ -44,7 +44,7 @@ service cloud.firestore {
                       request.resource.data.diff(resource.data).affectedKeys().hasOnly([
                         'full_name', 'bio', 'title', 'skills', 'hourly_rate', 
                         'location', 'socials', 'photo_url', 'last_updated', 
-                        'is_new_user', 'role', 'is_premium'
+                        'is_new_user', 'role', 'is_premium', 'email', 'created_at'
                       ]);
     }
 
@@ -57,16 +57,36 @@ service cloud.firestore {
 
     // Proposals Collection
     match /proposals/{proposalId} {
-      allow read: if isSignedIn() && (resource.data.freelancer_id == request.auth.uid || 
-                     get(/databases/$(database)/documents/jobs/$(resource.data.job_id)).data.client_id == request.auth.uid);
-      allow create: if isSignedIn() && isVerified();
+      allow list: if isSignedIn() && (resource.data.freelancer_id == request.auth.uid || 
+                    resource.data.client_id == request.auth.uid);
+      allow get: if isSignedIn() && (resource.data.freelancer_id == request.auth.uid || 
+                    resource.data.client_id == request.auth.uid);
+      allow create: if isSignedIn();
       allow update: if isSignedIn() && (resource.data.freelancer_id == request.auth.uid || 
-                       get(/databases/$(database)/documents/jobs/$(resource.data.job_id)).data.client_id == request.auth.uid);
+                       resource.data.client_id == request.auth.uid);
+      allow delete: if isSignedIn() && resource.data.freelancer_id == request.auth.uid;
     }
 
     // Messages Collection
-    match /conversations/{convId}/messages/{msgId} {
-      allow read, create: if isSignedIn() && (request.auth.uid in convId.split('_'));
+    match /messages/{messageId} {
+      allow list: if isSignedIn() && request.auth.uid in resource.data.participants;
+      allow get: if isSignedIn() && request.auth.uid in resource.data.participants;
+      allow create: if isSignedIn() && request.auth.uid == request.resource.data.sender_id;
+    }
+
+    // Premium Requests Collection (for Admin & Users)
+    match /premium_requests/{requestId} {
+      allow list: if isSignedIn() && (resource.data.user_id == request.auth.uid || 
+                    exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
+      allow get: if isSignedIn() && (resource.data.user_id == request.auth.uid || 
+                    exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
+      allow create: if isSignedIn() && request.auth.uid == request.resource.data.user_id;
+      allow update: if exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+
+    // Admins helper (if needed for the rules above)
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
     }
   }
 }
