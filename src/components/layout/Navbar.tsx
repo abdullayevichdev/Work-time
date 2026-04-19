@@ -61,10 +61,10 @@ export function Navbar() {
         <div className={`flex items-center justify-between transition-all duration-700 ${isScrolled ? 'glass-dark rounded-2xl md:rounded-full px-6 md:px-8 py-3' : 'bg-transparent'}`}>
           <Link to="/" className="flex items-center gap-3 group">
             <div className="w-10 h-10 rounded-2xl bg-primary flex items-center justify-center shadow-[0_0_30px_rgba(139,92,246,0.6)] group-hover:scale-110 transition-all duration-500">
-              <span className="text-2xl font-display font-bold text-white">W</span>
+              <span className="text-2xl font-display font-bold text-white text-sharp leading-none">W</span>
             </div>
             {!isScrolled && (
-              <span className="text-2xl font-display font-medium tracking-tighter text-white">WorkTime</span>
+              <span className="text-2xl font-display font-bold tracking-tighter text-white text-sharp">WorkTime</span>
             )}
           </Link>
 
@@ -74,7 +74,7 @@ export function Navbar() {
               <Link 
                 key={link.name} 
                 to={link.href}
-                className="text-xs font-bold tracking-widest uppercase text-white/50 hover:text-white transition-all duration-300 hover:scale-110 active:scale-95"
+                className="text-xs font-black tracking-widest uppercase text-white/50 hover:text-white transition-all duration-300 hover:scale-110 active:scale-95 text-sharp"
               >
                 {link.name}
               </Link>

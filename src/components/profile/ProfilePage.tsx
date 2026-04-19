@@ -1,3 +1,4 @@
+import * as React from 'react';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'motion/react';
@@ -14,9 +15,11 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc, setDoc, getDocFromServer } from 'firebase/firestore';
+import { doc, getDoc, setDoc, getDocFromServer, updateDoc } from 'firebase/firestore';
 import { toast } from 'sonner';
 import { handleFirestoreError, OperationType } from '@/lib/firestore-errors';
+import { useRef } from 'react';
+import { Loader2 } from 'lucide-react';
 
 export function ProfilePage() {
   const { t } = useTranslation();
@@ -36,6 +39,8 @@ export function ProfilePage() {
   const [editedTwitter, setEditedTwitter] = useState('');
   const [editedLinkedin, setEditedLinkedin] = useState('');
   const [editedRole, setEditedRole] = useState<'freelancer' | 'client'>('freelancer');
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -105,6 +110,7 @@ export function ProfilePage() {
           twitter: editedTwitter || '',
           linkedin: editedLinkedin || ''
         },
+        photo_url: profile?.photo_url || user.photoURL || '',
         is_new_user: false,
         last_updated: new Date().toISOString()
       };
@@ -117,6 +123,89 @@ export function ProfilePage() {
     } catch (error: any) {
       console.error('Profile Save Error:', error);
       toast.error(t('profile_save_error'));
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Iltimos, faqat rasm yuklang');
+      return;
+    }
+
+    // Validate size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Rasm o\'lchami juda katta (max 5MB)');
+      return;
+    }
+
+    setUploading(true);
+    const toastId = toast.loading('Rasm yuklanmoqda...');
+
+    try {
+      // Client-side image optimization (Resize to 256x256 and compress)
+      const reader = new FileReader();
+      
+      const optimizePromise = new Promise<string>((resolve, reject) => {
+        reader.onload = (event) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const MAX_SIZE = 256;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > height) {
+              if (width > MAX_SIZE) {
+                height *= MAX_SIZE / width;
+                width = MAX_SIZE;
+              }
+            } else {
+              if (height > MAX_SIZE) {
+                width *= MAX_SIZE / height;
+                height = MAX_SIZE;
+              }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx?.drawImage(img, 0, 0, width, height);
+            
+            // Convert to highly optimized JPEG
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+            resolve(dataUrl);
+          };
+          img.onerror = reject;
+          img.src = event.target?.result as string;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const optimizedImage = await optimizePromise;
+      
+      // Update Firestore
+      const docRef = doc(db, 'users', user.uid);
+      await updateDoc(docRef, {
+        photo_url: optimizedImage,
+        last_updated: new Date().toISOString()
+      });
+
+      // Update local state
+      setProfile((prev: any) => ({ ...prev, photo_url: optimizedImage }));
+      
+      toast.dismiss(toastId);
+      toast.success('Profil rasmi yangilandi');
+    } catch (error: any) {
+      console.error('Image upload error:', error);
+      toast.dismiss(toastId);
+      toast.error('Rasmni yuklashda xatolik yuz berdi');
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -167,16 +256,32 @@ export function ProfilePage() {
                 <div className="absolute inset-0 -m-3 rounded-full border border-primary/20 animate-pulse" />
                 <div className="absolute inset-0 -m-6 rounded-full border border-primary/5 scale-90" />
                 
-                <Avatar className="w-32 h-32 border-[6px] border-[#030014] p-1.5 bg-gradient-to-br from-primary via-blue-500 to-cyan-400 shadow-2xl relative z-10">
-                  <AvatarImage src={user?.photoURL || ''} className="rounded-full object-cover" />
+                <Avatar className="w-32 h-32 border-[6px] border-[#030014] p-1.5 bg-gradient-to-br from-primary via-blue-500 to-cyan-400 shadow-2xl relative z-10 overflow-hidden">
+                  <AvatarImage src={profile?.photo_url || user?.photoURL || ''} className="rounded-full object-cover" />
                   <AvatarFallback className="bg-[#0f172a] text-primary text-4xl font-bold">
                     {profile?.full_name?.[0] || 'U'}
                   </AvatarFallback>
+                  {uploading && (
+                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-20">
+                      <Loader2 className="w-8 h-8 text-primary animate-spin" />
+                    </div>
+                  )}
                 </Avatar>
+                
+                <input 
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleImageUpload}
+                  accept="image/*"
+                  className="hidden"
+                />
+
                 <motion.button 
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
-                  className="absolute bottom-1 right-1 w-10 h-10 rounded-full bg-primary flex items-center justify-center border-4 border-[#0a0a1a] shadow-xl"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="absolute bottom-1 right-1 w-10 h-10 rounded-full bg-primary flex items-center justify-center border-4 border-[#030014] shadow-xl z-20 hover:brightness-110 transition-all disabled:opacity-50"
                 >
                   <Camera className="w-4 h-4 text-white" />
                 </motion.button>

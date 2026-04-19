@@ -6,17 +6,17 @@ export function Footer() {
   const { t } = useTranslation();
 
   return (
-    <footer className="pt-20 pb-10 border-t border-white/5 bg-[#030014]/50 backdrop-blur-xl">
+    <footer className="pt-24 pb-12 border-t border-white/5 bg-[#030014]/80 backdrop-blur-3xl">
       <div className="container mx-auto px-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
-          <div className="space-y-6">
-            <Link to="/" className="flex items-center gap-3 group">
-              <div className="w-10 h-10 rounded-2xl bg-primary flex items-center justify-center shadow-[0_0_20px_rgba(139,92,246,0.3)] transition-transform duration-500">
-                <span className="text-2xl font-display font-bold text-white">W</span>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-20">
+          <div className="space-y-8">
+            <Link to="/" className="flex items-center gap-4 group">
+              <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center shadow-[0_0_30px_rgba(139,92,246,0.4)] transition-transform duration-500">
+                <span className="text-2xl font-display font-black text-white text-sharp leading-none">W</span>
               </div>
-              <span className="text-2xl font-display font-bold tracking-tighter text-white">WorkTime</span>
+              <span className="text-2xl font-display font-black tracking-tighter text-white text-sharp">WorkTime</span>
             </Link>
-            <p className="text-white/40 leading-relaxed text-sm">
+            <p className="text-white/60 leading-relaxed text-[15px] text-sharp">
               {t("footer_desc")}
             </p>
             <div className="flex gap-4">

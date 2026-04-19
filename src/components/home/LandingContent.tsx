@@ -30,44 +30,50 @@ export function LandingContent() {
           className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-4 md:gap-6 will-change-transform"
         >
           {/* Main Large Card */}
-          <motion.div variants={fadeInUp} className="md:col-span-4 lg:col-span-4 glass-card p-6 md:p-10 flex flex-col justify-between min-h-[300px] md:min-h-[400px] will-change-transform">
+          <motion.div variants={fadeInUp} className="md:col-span-4 lg:col-span-4 liquid-card p-6 md:p-12 flex flex-col justify-between min-h-[300px] md:min-h-[450px] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)]">
             <div>
-              <div className="w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-primary/20 flex items-center justify-center mb-6 md:mb-8">
-                <Sparkles className="w-6 h-6 md:w-7 md:h-7 text-primary" />
+              <div className="w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-primary/20 flex items-center justify-center mb-8 md:mb-10 shadow-inner">
+                <Sparkles className="w-6 h-6 md:w-8 md:h-8 text-primary" />
               </div>
-              <h3 className="text-3xl md:text-5xl font-display font-medium mb-4 md:mb-6">{t("feat_main_title")} <br/><span className="text-primary font-bold">{t("feat_main_italic")}</span></h3>
-              <p className="text-white/40 text-base md:text-lg max-w-md leading-relaxed">{t("feat_main_desc")}</p>
+              <h3 className="text-3xl md:text-6xl font-display font-bold mb-4 md:mb-6 tracking-tight text-sharp">{t("feat_main_title")} <br/><span className="text-primary">{t("feat_main_italic")}</span></h3>
+              <p className="text-white/70 text-base md:text-xl max-w-lg leading-relaxed text-sharp">{t("feat_main_desc")}</p>
             </div>
-            <div className="flex gap-3 md:gap-4 mt-6 md:mt-8">
-              <div className="px-4 md:px-5 py-1.5 md:py-2 rounded-full glass border-white/5 text-[10px] md:text-xs text-white/50">{t("feat_ui")}</div>
-              <div className="px-4 md:px-5 py-1.5 md:py-2 rounded-full glass border-white/5 text-[10px] md:text-xs text-white/50">{t("feat_latency")}</div>
+            <div className="flex gap-3 md:gap-4 mt-8 md:mt-10">
+              <div className="px-5 md:px-6 py-2 md:py-3 rounded-full glass border-white/5 text-[10px] md:text-xs font-bold tracking-widest uppercase text-white/50">{t("feat_ui")}</div>
+              <div className="px-5 md:px-6 py-2 md:py-3 rounded-full glass border-white/5 text-[10px] md:text-xs font-bold tracking-widest uppercase text-white/50">{t("feat_latency")}</div>
             </div>
           </motion.div>
 
           {/* Secure Card */}
-          <motion.div variants={fadeInUp} className="md:col-span-2 lg:col-span-2 glass-card p-6 md:p-10 bg-gradient-to-br from-primary/10 to-transparent">
-            <Shield className="w-8 h-8 md:w-10 md:h-10 text-primary mb-6 md:mb-8" />
-            <h3 className="text-xl md:text-2xl font-bold mb-3 md:mb-4">{t("feat_secure_title")}</h3>
-            <p className="text-sm md:text-base text-white/40 leading-relaxed">{t("feat_secure_desc")}</p>
+          <motion.div variants={fadeInUp} className="md:col-span-2 lg:col-span-2 liquid-card p-6 md:p-12 bg-gradient-to-br from-primary/10 to-transparent flex flex-col justify-center">
+            <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-8">
+              <Shield className="w-7 h-7 md:w-8 md:h-8 text-primary" />
+            </div>
+            <h3 className="text-xl md:text-3xl font-bold mb-4 md:mb-5 text-sharp">{t("feat_secure_title")}</h3>
+            <p className="text-sm md:text-lg text-white/60 leading-relaxed text-sharp">{t("feat_secure_desc")}</p>
           </motion.div>
 
           {/* Realtime Card */}
-          <motion.div variants={fadeInUp} className="md:col-span-3 lg:col-span-2 glass-card p-6 md:p-10">
-            <Zap className="w-8 h-8 md:w-10 md:h-10 text-yellow-400 mb-6 md:mb-8" />
-            <h3 className="text-xl md:text-2xl font-bold mb-3 md:mb-4">{t("feat_pulse_title")}</h3>
-            <p className="text-sm md:text-base text-white/40 leading-relaxed">{t("feat_pulse_desc")}</p>
+          <motion.div variants={fadeInUp} className="md:col-span-3 lg:col-span-2 liquid-card p-6 md:p-12 flex flex-col justify-center">
+            <div className="w-14 h-14 rounded-2xl bg-yellow-400/10 flex items-center justify-center mb-8">
+              <Zap className="w-7 h-7 md:w-8 md:h-8 text-yellow-400" />
+            </div>
+            <h3 className="text-xl md:text-3xl font-bold mb-4 md:mb-5 text-sharp">{t("feat_pulse_title")}</h3>
+            <p className="text-sm md:text-lg text-white/60 leading-relaxed text-sharp">{t("feat_pulse_desc")}</p>
           </motion.div>
 
           {/* Global Card */}
-          <motion.div variants={fadeInUp} className="md:col-span-3 lg:col-span-4 glass-card p-6 md:p-10 flex flex-col md:flex-row items-center gap-8 md:gap-10">
+          <motion.div variants={fadeInUp} className="md:col-span-3 lg:col-span-4 liquid-card p-8 md:p-12 flex flex-col md:flex-row items-center gap-10 md:gap-14">
              <div className="flex-1">
-                <Globe className="w-8 h-8 md:w-10 md:h-10 text-blue-400 mb-6 md:mb-8" />
-                <h3 className="text-xl md:text-2xl font-bold mb-3 md:mb-4">{t("feat_global_title")}</h3>
-                <p className="text-sm md:text-base text-white/40 leading-relaxed">{t("feat_global_desc")}</p>
+                <div className="w-14 h-14 rounded-2xl bg-blue-400/10 flex items-center justify-center mb-8">
+                  <Globe className="w-7 h-7 md:w-8 md:h-8 text-blue-400" />
+                </div>
+                <h3 className="text-xl md:text-3xl font-bold mb-4 md:mb-5 text-sharp">{t("feat_global_title")}</h3>
+                <p className="text-sm md:text-lg text-white/60 leading-relaxed text-sharp">{t("feat_global_desc")}</p>
              </div>
-             <div className="w-full md:w-1/2 h-full min-h-[150px] md:min-h-[200px] rounded-2xl bg-white/[0.03] border border-white/5 relative overflow-hidden will-change-transform">
-                <div className="absolute inset-0 bg-mesh opacity-50" />
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 md:w-32 md:h-32 bg-primary/20 rounded-full blur-3xl animate-pulse will-change-[opacity]" />
+             <div className="w-full md:w-1/2 h-64 rounded-3xl bg-white/[0.03] border border-white/5 relative overflow-hidden group">
+                <div className="absolute inset-0 bg-mesh opacity-30 group-hover:opacity-50 transition-opacity" />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-primary/30 rounded-full blur-[80px] animate-pulse" />
              </div>
           </motion.div>
         </motion.div>
@@ -87,11 +93,11 @@ export function LandingContent() {
               initial={{ opacity: 0, scale: 0.9 }}
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
-              className="text-center p-6 md:p-12 glass border-white/5 rounded-2xl md:rounded-[3rem] hover:border-primary/20 transition-all duration-500"
+              className="text-center p-6 md:p-12 glass-dark border-white/5 rounded-3xl md:rounded-[4rem] hover:border-primary/20 transition-all duration-500 shadow-2xl"
             >
-              <stat.icon className={`w-8 h-8 md:w-10 md:h-10 mx-auto mb-4 md:mb-6 ${stat.color} opacity-80`} />
-              <h3 className="text-2xl md:text-4xl font-display font-medium mb-1 md:mb-2 tracking-tight">{stat.value}</h3>
-              <p className="text-[8px] md:text-[10px] text-white/30 uppercase tracking-[0.2em] font-bold">{stat.label}</p>
+              <stat.icon className={`w-8 h-8 md:w-12 md:h-12 mx-auto mb-6 md:mb-8 ${stat.color} brightness-150`} />
+              <h3 className="text-2xl md:text-5xl font-display font-bold mb-2 md:mb-3 tracking-tighter text-sharp">{stat.value}</h3>
+              <p className="text-[10px] md:text-xs text-white/40 uppercase tracking-[0.3em] font-bold text-sharp">{stat.label}</p>
             </motion.div>
           ))}
         </div>
@@ -156,17 +162,20 @@ export function LandingContent() {
 
       {/* Final CTA */}
       <section className="container mx-auto px-6">
-        <div className="p-8 md:p-20 glass-card bg-mesh relative overflow-hidden group text-center rounded-3xl md:rounded-[4rem]">
-          <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
+        <div className="p-8 md:p-24 liquid-card bg-[#030014] relative overflow-hidden group text-center rounded-[3rem] md:rounded-[5rem]">
+          <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
+          {/* Animated Blob */}
+          <div className="absolute -top-40 -left-40 w-96 h-96 bg-primary/10 liquid-blob blur-[100px] opacity-30" />
+          
           <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
+            initial={{ opacity: 0, scale: 0.95 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
             className="relative z-10"
           >
-            <h2 className="text-3xl md:text-7xl font-display font-medium mb-6 md:mb-8">{t("cta_title")} <span className="text-primary font-bold">{t("cta_italic")}</span></h2>
-            <p className="text-white/50 text-base md:text-xl max-w-xl mx-auto mb-8 md:mb-12">{t("cta_desc")}</p>
-            <button className="h-16 md:h-20 px-8 md:px-12 bg-white text-black font-bold rounded-xl md:rounded-2xl text-lg md:text-xl hover:scale-105 active:scale-95 transition-all duration-300">
+            <h2 className="text-4xl md:text-8xl font-display font-bold mb-8 md:mb-12 tracking-tighter text-sharp leading-[0.9]">{t("cta_title")} <br/><span className="text-primary">{t("cta_italic")}</span></h2>
+            <p className="text-white/70 text-base md:text-2xl max-w-2xl mx-auto mb-10 md:mb-16 leading-relaxed font-light text-sharp">{t("cta_desc")}</p>
+            <button className="h-16 md:h-20 px-10 md:px-14 bg-white text-black font-black uppercase tracking-widest rounded-2xl md:rounded-3xl text-sm md:text-base hover:scale-105 active:scale-95 transition-all duration-300 shadow-2xl">
               {t("cta_button")}
             </button>
           </motion.div>

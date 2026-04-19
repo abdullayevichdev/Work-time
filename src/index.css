@@ -17,15 +17,24 @@
   --radius-xl: 1.5rem;
   --radius-2xl: 2rem;
   --radius-3xl: 2.5rem;
+
+  --animate-liquid: liquid 20s infinite alternate;
 }
 
 @layer utilities {
   .glass {
-    @apply bg-white/[0.03] backdrop-blur-lg border border-white/[0.08] shadow-[0_8px_32px_0_rgba(0,0,0,0.5)];
+    @apply bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] shadow-[0_8px_32px_0_rgba(0,0,0,0.5)];
   }
   
   .glass-dark {
-    @apply bg-black/40 backdrop-blur-xl border border-white/[0.05] shadow-[0_24px_48px_0_rgba(0,0,0,0.8)];
+    @apply bg-black/40 backdrop-blur-2xl border border-white/[0.05] shadow-[0_24px_48px_0_rgba(0,0,0,0.8)];
+  }
+
+  .liquid-card {
+    @apply relative overflow-hidden rounded-[2.5rem] bg-white/[0.01] backdrop-blur-[40px] border border-white/[0.1] shadow-2xl;
+    box-shadow: 
+      inset 0 0 20px rgba(255, 255, 255, 0.05),
+      0 10px 40px rgba(0, 0, 0, 0.4);
   }
 
   .glass-card {
@@ -33,19 +42,37 @@
   }
 
   .glow-text {
-    @apply text-white drop-shadow-[0_0_12px_rgba(255,255,255,0.4)];
+    @apply text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.6)];
+    text-rendering: optimizeLegibility;
   }
 
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-white via-white/80 to-white/40;
-    background-size: 200% auto;
-    animation: glow-sweep 8s linear infinite;
+    @apply bg-clip-text text-transparent bg-gradient-to-br from-white via-white to-white/60 font-bold;
+    filter: drop-shadow(0 0 30px rgba(255,255,255,0.1));
+  }
+
+  .text-sharp {
+    @apply text-white brightness-125;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    -webkit-font-smoothing: antialiased;
   }
 
   @keyframes glow-sweep {
     0% { background-position: 0% 50%; }
     50% { background-position: 100% 50%; }
     100% { background-position: 0% 50%; }
+  }
+
+  @keyframes liquid {
+    0% { border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; transform: translate(0,0) scale(1); }
+    33% { border-radius: 70% 30% 50% 50% / 30% 30% 70% 70%; transform: translate(10%, 5%) scale(1.1); }
+    66% { border-radius: 30% 70% 70% 30% / 50% 50% 30% 30%; transform: translate(-10%, 15%) scale(1.2); }
+    100% { border-radius: 40% 60% 70% 30% / 40% 30% 70% 50%; transform: translate(0,0) scale(1); }
+  }
+
+  .liquid-blob {
+    animation: liquid 25s linear infinite alternate;
+    will-change: border-radius, transform;
   }
 
   .bg-mesh {

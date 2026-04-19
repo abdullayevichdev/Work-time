@@ -43,12 +43,17 @@ export function Hero() {
 
   return (
     <div ref={containerRef} className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
-      {/* Dynamic Background Elements */}
+      {/* Dynamic Background Elements - Liquid Glass Effect */}
       <motion.div 
         style={!shouldReduceMotion ? { y, opacity, scale } : {}} 
         className="absolute inset-0 z-0 will-change-transform"
       >
-        <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 ${isMobile ? 'w-[400px] h-[400px] blur-[80px]' : 'w-[800px] h-[800px] blur-[160px]'} bg-primary/20 rounded-full animate-pulse will-change-[opacity]`} />
+        {/* Organic Liquid Blobs */}
+        <div className="absolute top-1/4 -left-20 w-[600px] h-[600px] bg-primary/20 liquid-blob blur-[120px] mix-blend-screen opacity-50" />
+        <div className="absolute -bottom-20 -right-20 w-[700px] h-[700px] bg-cyan-500/10 liquid-blob blur-[140px] mix-blend-screen animation-delay-2000 opacity-40" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] bg-indigo-500/5 liquid-blob blur-[160px] animation-delay-5000" />
+
+        <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 ${isMobile ? 'w-[400px] h-[400px] blur-[80px]' : 'w-[800px] h-[800px] blur-[160px]'} bg-primary/10 rounded-full animate-pulse will-change-[opacity]`} />
         {!isMobile && (
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-500/10 rounded-full blur-[140px] delay-700 animate-pulse will-change-[opacity]" />
         )}
@@ -81,30 +86,25 @@ export function Hero() {
           
           <motion.h1 
             variants={itemVariants}
-            className="text-4xl sm:text-6xl md:text-8xl lg:text-[11rem] font-display font-bold tracking-tighter mb-8 md:mb-12 leading-tight md:leading-[0.8] text-white flex flex-col items-center select-none"
+            className="text-4xl sm:text-6xl md:text-8xl lg:text-[11.5rem] font-display font-bold tracking-tighter mb-8 md:mb-12 leading-tight md:leading-[0.8] text-white flex flex-col items-center select-none perspective-1000"
           >
             <motion.span 
-              animate={!isMobile && !shouldReduceMotion ? { 
-                textShadow: ["0 0 20px rgba(139,92,246,0)", "0 0 60px rgba(139,92,246,0.6)", "0 0 20px rgba(139,92,246,0)"],
-                y: [0, -5, 0]
-              } : {}}
-              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-              className="text-gradient inline-block relative z-30 drop-shadow-[0_10px_10px_rgba(0,0,0,0.3)] will-change-[text-shadow,transform]"
+              className="text-gradient inline-block relative z-30 drop-shadow-[0_15px_30px_rgba(0,0,0,0.5)] will-change-transform text-sharp"
             >
               {t("hero_title_1")}
             </motion.span>
             <motion.div 
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 1.1, duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-              className="relative z-10 mt-1 md:mt-4 group cursor-default select-none"
+              initial={{ y: 20, opacity: 0, scale: 0.95 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              transition={{ delay: 0.8, duration: 1, ease: [0.16, 1, 0.3, 1] }}
+              className="relative z-10 mt-2 md:mt-4 group cursor-default select-none -skew-x-6"
             >
-              {/* Volumetric Glow Echo */}
-              <span className="absolute inset-0 blur-3xl opacity-20 bg-gradient-to-r from-cyan-500 via-blue-600 to-primary pointer-events-none transition-all duration-[2s] group-hover:opacity-40 group-hover:scale-110">
+              {/* Liquid Volumetric Highlight */}
+              <span className="absolute inset-0 blur-3xl opacity-10 bg-gradient-to-r from-cyan-500 via-blue-600 to-primary pointer-events-none transition-all duration-[2s] group-hover:opacity-30 group-hover:scale-125">
                 {t("hero_title_2")}
               </span>
               
-              <span className="relative inline-block font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 via-white to-blue-400 drop-shadow-[0_10px_20px_rgba(0,0,0,0.4)] brightness-110">
+              <span className="relative inline-block font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-br from-cyan-300 via-white to-blue-400 drop-shadow-[0_20px_40px_rgba(0,0,0,0.4)] brightness-125 text-sharp">
                 {t("hero_title_2")}
               </span>
 
@@ -129,7 +129,7 @@ export function Hero() {
 
           <motion.p 
             variants={itemVariants}
-            className="text-sm md:text-2xl text-white/40 max-w-2xl mx-auto mb-10 md:mb-20 leading-relaxed font-light tracking-wide px-4"
+            className="text-[15px] md:text-2xl text-white/70 max-w-2xl mx-auto mb-10 md:mb-16 leading-relaxed font-light tracking-wide px-4 text-sharp"
           >
             {t("hero_desc")}
           </motion.p>
