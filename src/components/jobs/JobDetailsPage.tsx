@@ -13,8 +13,10 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { db, auth } from '@/lib/firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { ApplyModal } from './ApplyModal';
+import { useTranslation } from 'react-i18next';
 
 export function JobDetailsPage() {
+  const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
   const [job, setJob] = useState<any>(null);
@@ -51,7 +53,7 @@ export function JobDetailsPage() {
     return () => unsubJob();
   }, [id, navigate]);
 
-  if (loading) return <div className="pt-32 container mx-auto px-6">Loading job details...</div>;
+  if (loading) return <div className="pt-32 container mx-auto px-6">{t('loading_job_details')}</div>;
   if (!job) return null;
 
   return (
@@ -67,7 +69,7 @@ export function JobDetailsPage() {
         className="flex items-center gap-2 text-indigo-900/40 hover:text-primary transition-colors mb-8 group font-medium text-sharp"
       >
         <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-        Back to Jobs
+        {t('back_to_jobs')}
       </button>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -81,25 +83,25 @@ export function JobDetailsPage() {
                 <h1 className="text-3xl md:text-4xl font-display font-bold mb-4 text-indigo-950 text-sharp break-words">{job.title}</h1>
                 <div className="flex flex-wrap gap-4 text-xs md:text-sm text-indigo-900/40 font-bold tracking-tight text-sharp">
                   <span className="flex items-center gap-1.5"><Tag className="w-4 h-4" /> {job.category}</span>
-                  <span className="flex items-center gap-1.5"><Calendar className="w-4 h-4" /> Posted {new Date(job.created_at).toLocaleDateString()}</span>
-                  <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4" /> Remote</span>
+                  <span className="flex items-center gap-1.5"><Calendar className="w-4 h-4" /> {t('posted_date')} {new Date(job.created_at).toLocaleDateString()}</span>
+                  <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4" /> {t('remote')}</span>
                 </div>
               </div>
               <div className="md:text-right flex flex-col md:items-end">
                 <p className="text-3xl font-bold text-primary text-sharp">${job.budget}</p>
-                <p className="text-sm text-indigo-900/40 font-bold text-sharp whitespace-nowrap">{job.budget_type === 'hourly' ? 'Estimated / hr' : 'Fixed Price'}</p>
+                <p className="text-sm text-indigo-900/40 font-bold text-sharp whitespace-nowrap">{job.budget_type === 'hourly' ? t('estimated_hr') : t('fixed_price')}</p>
               </div>
             </div>
 
             <div className="prose prose-invert max-w-none mb-12">
-              <h3 className="text-xl font-bold mb-4 text-indigo-950 text-sharp">Project Description</h3>
+              <h3 className="text-xl font-bold mb-4 text-indigo-950 text-sharp">{t('proj_desc')}</h3>
               <p className="text-indigo-950/60 leading-relaxed whitespace-pre-wrap text-sharp font-normal">
                 {job.description}
               </p>
             </div>
 
             <div className="space-y-6">
-              <h3 className="text-xl font-bold text-indigo-950 text-sharp">Required Skills</h3>
+              <h3 className="text-xl font-bold text-indigo-950 text-sharp">{t('req_skills')}</h3>
               <div className="flex flex-wrap gap-2">
                 {job.skills_required?.map((skill: string) => (
                   <Badge key={skill} className="bg-primary/20 text-primary border-primary/30 px-4 py-2">
@@ -117,14 +119,14 @@ export function JobDetailsPage() {
             <div className="space-y-6">
               <Button 
                 onClick={() => setIsApplyModalOpen(true)}
-                className="w-full h-14 bg-primary hover:bg-primary/80 text-lg shadow-[0_0_20px_rgba(139,92,246,0.3)]"
+                className="w-full h-11 md:h-14 bg-primary hover:bg-primary/80 text-sm md:text-lg shadow-[0_0_20px_rgba(139,92,246,0.3)]"
               >
-                Submit Proposal
-                <Send className="ml-2 w-5 h-5" />
+                {t('submit_proposal')}
+                <Send className="ml-2 w-4 md:w-5 h-4 md:h-5" />
               </Button>
               
               <div className="pt-6 border-t border-indigo-900/5 space-y-6">
-                <h3 className="font-bold text-lg text-indigo-950 text-sharp">About the Client</h3>
+                <h3 className="font-bold text-lg text-indigo-950 text-sharp">{t('about_client')}</h3>
                 <div className="flex items-center gap-4">
                   <Avatar className="w-12 h-12 border border-indigo-900/10">
                     <AvatarImage src={client?.avatar_url} />
@@ -133,7 +135,7 @@ export function JobDetailsPage() {
                   <div>
                     <h4 className="font-bold truncate max-w-[150px] text-indigo-950 text-sharp">{client?.full_name || 'Anonymous Client'}</h4>
                     <p className="text-xs text-indigo-900/40 flex items-center gap-1 font-bold text-sharp">
-                      <ShieldCheck className="w-3 h-3 text-green-500" /> Payment Verified
+                      <ShieldCheck className="w-3 h-3 text-green-500" /> {t('payment_verified')}
                     </p>
                   </div>
                 </div>
@@ -141,21 +143,21 @@ export function JobDetailsPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-4 rounded-2xl bg-indigo-900/5 border border-indigo-900/5 shadow-sm">
                     <p className="text-xl font-bold text-indigo-950 text-sharp">12</p>
-                    <p className="text-[10px] text-indigo-900/40 uppercase tracking-widest font-bold text-sharp">Jobs Posted</p>
+                    <p className="text-[10px] text-indigo-900/40 uppercase tracking-widest font-bold text-sharp">{t('jobs_posted')}</p>
                   </div>
                   <div className="p-4 rounded-2xl bg-indigo-900/5 border border-indigo-900/5 shadow-sm">
                     <p className="text-xl font-bold text-indigo-950 text-sharp">4.8</p>
-                    <p className="text-[10px] text-indigo-900/40 uppercase tracking-widest font-bold text-sharp">Rating</p>
+                    <p className="text-[10px] text-indigo-900/40 uppercase tracking-widest font-bold text-sharp">{t('rating')}</p>
                   </div>
                 </div>
 
                 <div className="space-y-3">
                   <div className="flex items-center justify-between text-sm font-medium">
-                    <span className="text-indigo-900/40 text-sharp">Location</span>
-                    <span className="text-indigo-950 text-sharp">Verified</span>
+                    <span className="text-indigo-900/40 text-sharp">{t('location')}</span>
+                    <span className="text-indigo-950 text-sharp">{t('verified_status')}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm font-medium">
-                    <span className="text-indigo-900/40 text-sharp">Member since</span>
+                    <span className="text-indigo-900/40 text-sharp">{t('member_since')}</span>
                     <span className="text-indigo-950 text-sharp">{client?.created_at ? new Date(client.created_at).getFullYear() : '2024'}</span>
                   </div>
                 </div>
@@ -165,7 +167,7 @@ export function JobDetailsPage() {
 
           <Card className="glass border-white/10 p-6 bg-primary/5">
             <h4 className="font-bold mb-3 flex items-center gap-2">
-              <Briefcase className="w-4 h-4 text-primary" /> Similar Jobs
+              <Briefcase className="w-4 h-4 text-primary" /> {t('similar_jobs')}
             </h4>
             <div className="space-y-4">
               {[1, 2].map(i => (

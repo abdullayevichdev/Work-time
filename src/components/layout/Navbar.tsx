@@ -5,9 +5,10 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   Menu, X, User, LogOut, MessageSquare, 
   Bell, Briefcase, LayoutDashboard, Globe, ChevronDown,
-  Users
+  Users, Shield
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ADMIN_USERS } from '@/constants';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -89,16 +90,33 @@ export function Navbar() {
 
             {user ? (
               <DropdownMenu>
-                <DropdownMenuTrigger
-                  render={
-                    <button className="w-10 h-10 rounded-full liquid-glass border-white/60 flex items-center justify-center hover:bg-white/40 transition-colors shadow-sm group">
-                      <User className="w-5 h-5 text-indigo-900/40 group-hover:text-primary transition-colors" />
-                    </button>
-                  }
-                />
-                <DropdownMenuContent className="liquid-glass border-white/60 w-48 bg-white/80 backdrop-blur-3xl" align="end">
-                  <DropdownMenuItem render={<Link to="/profile" className="text-indigo-950 hover:bg-white/40 cursor-pointer flex items-center gap-2 p-3 font-medium"><User className="w-4 h-4" /> {t("profile")}</Link>} />
-                  <DropdownMenuItem onClick={handleLogout} className="text-red-500 hover:bg-red-50/50 cursor-pointer flex items-center gap-2 p-3 font-medium"><LogOut className="w-4 h-4" /> {t("logout")}</DropdownMenuItem>
+                <DropdownMenuTrigger className="w-10 h-10 rounded-full liquid-glass border-white/60 flex items-center justify-center hover:bg-white/40 transition-colors shadow-sm group">
+                  <User className="w-5 h-5 text-indigo-900/40 group-hover:text-primary transition-colors" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="liquid-glass border-white/60 w-48 bg-white/80 backdrop-blur-3xl px-1 py-1" align="end">
+                  {user?.email && ADMIN_USERS[user.email.toLowerCase()] && (
+                    <DropdownMenuItem 
+                      onClick={() => {
+                        console.log('Navigating to /admin');
+                        navigate('/admin');
+                      }}
+                      className="text-primary hover:bg-primary/5 cursor-pointer flex items-center gap-2 p-3 font-bold"
+                    >
+                      <Shield className="w-4 h-4" /> {ADMIN_USERS[user.email.toLowerCase()]} Panel
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem 
+                    onClick={() => {
+                      console.log('Navigating to /profile');
+                      navigate('/profile');
+                    }}
+                    className="text-indigo-950 hover:bg-white/40 cursor-pointer flex items-center gap-2 p-3 font-medium"
+                  >
+                    <User className="w-4 h-4" /> {t("profile")}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleLogout} className="text-red-500 hover:bg-red-50/50 cursor-pointer flex items-center gap-2 p-3 font-medium">
+                    <LogOut className="w-4 h-4" /> {t("logout")}
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
@@ -111,7 +129,7 @@ export function Navbar() {
                 </Link>
                 <Link 
                   to="/signup" 
-                  className="px-8 py-3 bg-primary text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-primary/90 hover:scale-105 active:scale-95 transition-all shadow-lg"
+                  className="px-8 h-11 bg-primary text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-primary/90 hover:scale-105 active:scale-95 transition-all shadow-lg flex items-center justify-center"
                 >
                   {t("signup")}
                 </Link>
@@ -137,16 +155,16 @@ export function Navbar() {
             className="md:hidden fixed inset-0 z-50 liquid-glass border-none bg-white/90 backdrop-blur-2xl p-6 flex flex-col justify-between overflow-y-auto"
             style={{ willChange: 'transform, opacity' }}
           >
-            <div className="space-y-12">
+            <div className="space-y-12 text-indigo-950">
               <div className="flex items-center justify-between">
                 <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-2xl bg-primary flex items-center justify-center">
                     <span className="text-2xl font-display font-medium text-white">W</span>
                   </div>
-                  <span className="text-2xl font-display font-medium tracking-tighter text-indigo-950">WorkTime</span>
+                  <span className="text-2xl font-display font-medium tracking-tighter">WorkTime</span>
                 </Link>
                 <button onClick={() => setIsMobileMenuOpen(false)} className="w-10 h-10 rounded-full liquid-glass border-white/60 flex items-center justify-center">
-                  <X className="w-5 h-5 text-indigo-950" />
+                  <X className="w-5 h-5" />
                 </button>
               </div>
 
@@ -161,7 +179,7 @@ export function Navbar() {
                     <Link 
                       to={link.href}
                       onClick={() => setIsMobileMenuOpen(false)}
-                      className="text-xl font-display font-medium text-indigo-950/40 hover:text-primary flex items-center gap-6 group transition-all"
+                      className="text-xl font-display font-medium opacity-40 hover:opacity-100 hover:text-primary flex items-center gap-6 group transition-all"
                     >
                       <span className="text-xs font-mono text-primary/40 group-hover:text-primary transition-colors">0{i + 1}</span>
                       {link.name}
@@ -188,37 +206,47 @@ export function Navbar() {
                   <Link 
                     to="/login"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="h-12 flex items-center justify-center text-xs font-bold uppercase tracking-widest border border-indigo-900/10 rounded-xl text-indigo-900/60 hover:bg-white/40 transition-colors"
+                    className="h-11 flex items-center justify-center text-xs font-bold uppercase tracking-widest border border-indigo-900/10 rounded-xl text-indigo-900/60 hover:bg-white/40 transition-colors"
                   >
                     {t("login")}
                   </Link>
                   <Link 
                     to="/signup"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="h-12 flex items-center justify-center text-xs font-bold uppercase tracking-widest bg-primary text-white rounded-xl hover:bg-primary/90 transition-all shadow-lg"
+                    className="h-11 flex items-center justify-center text-xs font-bold uppercase tracking-widest bg-primary text-white rounded-xl hover:bg-primary/90 transition-all shadow-lg"
                   >
                     {t("signup")}
                   </Link>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-3">
-                  <Button
-                    variant="ghost"
-                    onClick={() => { navigate('/profile'); setIsMobileMenuOpen(false); }}
-                    className="h-12 liquid-glass border-white/60 bg-white/40 text-indigo-950 gap-2 text-xs rounded-xl"
-                  >
-                    <User className="w-3.5 h-3.5" /> {t("profile")}
-                  </Button>
-                  <Button
-                    onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }}
-                    className="h-12 bg-red-500/10 text-red-500 hover:bg-red-500/20 gap-2 text-xs rounded-xl"
-                  >
-                    <LogOut className="w-3.5 h-3.5" /> {t("logout")}
-                  </Button>
+                <div className="flex flex-col gap-3">
+                  {user?.email && ADMIN_USERS[user.email.toLowerCase()] && (
+                    <Button
+                      onClick={() => { navigate('/admin'); setIsMobileMenuOpen(false); }}
+                      className="h-11 bg-primary/10 text-primary hover:bg-primary/20 gap-2 text-xs rounded-xl font-bold"
+                    >
+                      <Shield className="w-3.5 h-3.5" /> {ADMIN_USERS[user.email.toLowerCase()]} Panel
+                    </Button>
+                  )}
+                  <div className="grid grid-cols-2 gap-3">
+                    <Button
+                      variant="ghost"
+                      onClick={() => { navigate('/profile'); setIsMobileMenuOpen(false); }}
+                      className="h-11 liquid-glass border-white/60 bg-white/40 text-indigo-950 gap-2 text-xs rounded-xl"
+                    >
+                      <User className="w-3.5 h-3.5" /> {t("profile")}
+                    </Button>
+                    <Button
+                      onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }}
+                      className="h-11 bg-red-500/10 text-red-500 hover:bg-red-500/20 gap-2 text-xs rounded-xl"
+                    >
+                      <LogOut className="w-3.5 h-3.5" /> {t("logout")}
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
-          </motion.div>
+        </motion.div>
         )}
       </AnimatePresence>
     </nav>

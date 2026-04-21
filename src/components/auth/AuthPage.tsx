@@ -45,23 +45,37 @@ export function AuthPage({ mode }: AuthPageProps) {
     try {
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
-      
-      // Increased delay for auth state to propagate to all Firestore nodes
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
       const user = result.user;
+      
+      // Give Firestore a moment to establish connection with the new auth state
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
       console.log('User signed in:', user.uid);
 
-      // Check if user document exists using getDocFromServer to bypass cache
-      let userDoc;
-      try {
-        userDoc = await getDocFromServer(doc(db, 'users', user.uid));
-      } catch (e) {
-        console.warn('getDocFromServer failed, trying regular getDoc', e);
+      // Robust check for user document existence with a small retry loop
+      let userDoc = null;
+      let checkAttempts = 0;
+      const maxAttempts = 3;
+
+      while (checkAttempts < maxAttempts && !userDoc) {
         try {
-          userDoc = await getDoc(doc(db, 'users', user.uid));
-        } catch (e2) {
-          handleFirestoreError(e2, OperationType.GET, `users/${user.uid}`);
+          // Priority 1: Try server fetch for latest data
+          if (checkAttempts === 0) {
+            userDoc = await getDocFromServer(doc(db, 'users', user.uid));
+          } else {
+            // Priority 2: Regular getDoc (can use cache if network is struggling)
+            userDoc = await getDoc(doc(db, 'users', user.uid));
+          }
+        } catch (e: any) {
+          console.warn(`Initial profile check attempt ${checkAttempts + 1} failed:`, e.message);
+          checkAttempts++;
+          if (checkAttempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, checkAttempts === 1 ? 1500 : 3000));
+          } else {
+            // Final attempt failed, handle via error logic
+            handleFirestoreError(e, OperationType.GET, `users/${user.uid}`);
+            return;
+          }
         }
       }
       
@@ -92,10 +106,14 @@ export function AuthPage({ mode }: AuthPageProps) {
       const currentDomain = window.location.hostname;
       const errorCode = error.code;
       
-      if (errorCode === 'auth/popup-closed-by-user') {
+      if (errorCode === 'auth/popup-closed-by-user' || errorCode === 'auth/popup-blocked') {
         toast.error(t('popup_closed'), {
           description: t('popup_closed_desc'),
-          duration: 6000,
+          duration: 8000,
+          action: {
+            label: "New Tab",
+            onClick: () => window.open(window.location.href, '_blank')
+          }
         });
       } else if (errorCode === 'auth/unauthorized-domain') {
         toast.error(t('unauthorized_domain'), {
@@ -208,23 +226,23 @@ export function AuthPage({ mode }: AuthPageProps) {
               <Button 
                 type="button"
                 variant="ghost" 
-                className="liquid-glass border-white/10 hover:bg-white/10 h-14 relative group overflow-hidden rounded-2xl transition-all hover:scale-105 active:scale-95"
+                className="liquid-glass border-white/10 hover:bg-white/10 h-11 md:h-14 relative group overflow-hidden rounded-2xl transition-all hover:scale-105 active:scale-95"
                 onClick={handleGoogleSignIn}
                 disabled={loading}
               >
                 <div className="specular-glow opacity-20" />
-                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-6 h-6" alt="Google" />
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5 md:w-6 md:h-6" alt="Google" />
               </Button>
 
               <Button 
                 type="button"
                 variant="ghost" 
-                className="liquid-glass border-white/10 hover:bg-white/10 h-14 relative group overflow-hidden rounded-2xl transition-all hover:scale-105 active:scale-95"
+                className="liquid-glass border-white/10 hover:bg-white/10 h-11 md:h-14 relative group overflow-hidden rounded-2xl transition-all hover:scale-105 active:scale-95"
                 onClick={handleAppleSignIn}
                 disabled={loading}
               >
                 <div className="specular-glow opacity-20" />
-                <svg viewBox="0 0 384 512" className="w-5 h-5 fill-current text-white">
+                <svg viewBox="0 0 384 512" className="w-4 h-4 md:w-5 md:h-5 fill-current text-white">
                   <path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-48.7-20.7-82.6-20.7-43.4.6-83.3 25.9-105.6 64.7-44.5 77-11.4 190.6 31.5 252.5 21 30.2 46.1 63.9 77.7 62.7 30.7-1.1 42.4-19.6 79.7-19.6 37.1 0 48.3 19.6 80.2 18.9 32.2-1.1 54.2-30.2 75-60.6 24.1-35.2 33.9-69.4 34.2-71.1-.7-.3-66.5-25.5-66.7-103.1zM285.4 92.1c16.1-20.1 27-48.1 24-76.1-23.1 1-52.1 16.1-68.7 34.1-15 16.1-28.1 44.1-25.1 72.1 26.1 2 53.7-11 69.8-30.1z"/>
                 </svg>
               </Button>
@@ -316,9 +334,9 @@ export function AuthPage({ mode }: AuthPageProps) {
                 </div>
               </div>
 
-              <Button type="submit" className="w-full h-14 bg-primary hover:bg-primary/90 text-lg font-bold rounded-xl shadow-[0_0_30px_rgba(139,92,246,0.5)] group" disabled={loading}>
+              <Button type="submit" className="w-full h-11 md:h-14 bg-primary hover:bg-primary/90 text-sm md:text-lg font-bold rounded-xl shadow-[0_0_30px_rgba(139,92,246,0.5)] group" disabled={loading}>
                 {loading ? t('processing') : mode === 'login' ? t('login') : t('signup')}
-                {!loading && <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />}
+                {!loading && <ArrowRight className="ml-2 w-4 md:w-5 h-4 md:h-5 group-hover:translate-x-1 transition-transform" />}
               </Button>
             </form>
 

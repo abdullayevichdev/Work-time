@@ -7,8 +7,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { Clock, Check, X, MessageSquare } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 
 export function ApplicationsList() {
+  const navigate = useNavigate();
+  const { t } = useTranslation();
   const [applications, setApplications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -43,21 +47,21 @@ export function ApplicationsList() {
       setApplications(applications.map(app => 
         app.id === appId ? { ...app, status } : app
       ));
-      toast.success(`Proposal ${status}`);
+      toast.success(t('proposal_status_updated'));
     } catch (error) {
       console.error('Error updating status:', error);
-      toast.error('Failed to update status');
+      toast.error(t('error_update_status'));
     }
   };
 
-  if (loading) return <div className="p-8 text-center text-white/40">Loading applications...</div>;
+  if (loading) return <div className="p-8 text-center text-white/40">{t('loading_apps')}</div>;
 
   if (applications.length === 0) {
     return (
       <div className="p-12 text-center glass border-white/10 rounded-3xl">
         <MessageSquare className="w-12 h-12 text-white/20 mx-auto mb-4" />
-        <h3 className="text-xl font-bold mb-2">No applications yet</h3>
-        <p className="text-white/40">When freelancers apply to your jobs, they will appear here.</p>
+        <h3 className="text-xl font-bold mb-2">{t('no_apps_yet')}</h3>
+        <p className="text-white/40">{t('no_apps_desc')}</p>
       </div>
     );
   }
@@ -77,7 +81,7 @@ export function ApplicationsList() {
                 <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
                   <div>
                     <h4 className="text-xl font-bold">{app.freelancer_name}</h4>
-                    <p className="text-primary text-sm font-medium">Applied for: {app.job_title}</p>
+                    <p className="text-primary text-sm font-medium">{t('applied_for')} {app.job_title}</p>
                   </div>
                   <Badge 
                     className={`capitalize ${
@@ -108,14 +112,14 @@ export function ApplicationsList() {
                         className="text-red-400 hover:bg-red-400/10 hover:text-red-400"
                         onClick={() => handleStatusUpdate(app.id, 'rejected')}
                       >
-                        <X className="w-4 h-4 mr-1" /> Reject
+                        <X className="w-4 h-4 mr-1" /> {t('reject')}
                       </Button>
                       <Button 
                         size="sm" 
                         className="bg-green-600 hover:bg-green-500"
                         onClick={() => handleStatusUpdate(app.id, 'accepted')}
                       >
-                        <Check className="w-4 h-4 mr-1" /> Accept
+                        <Check className="w-4 h-4 mr-1" /> {t('accept')}
                       </Button>
                     </div>
                   )}
@@ -125,9 +129,9 @@ export function ApplicationsList() {
                       size="sm" 
                       variant="outline" 
                       className="border-primary/30 text-primary hover:bg-primary/10"
-                      onClick={() => toast.info('Messaging feature coming soon!')}
+                      onClick={() => navigate(`/messages?userId=${app.freelancer_id}`)}
                     >
-                      <MessageSquare className="w-4 h-4 mr-1" /> Message Freelancer
+                      <MessageSquare className="w-4 h-4 mr-1" /> {t('message_freelancer')}
                     </Button>
                   )}
                 </div>

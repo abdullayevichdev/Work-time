@@ -110,7 +110,7 @@ export function PostJobModal({ isOpen, onClose, onSuccess }: PostJobModalProps) 
                     <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary/50" />
                     <Input
                       placeholder={t("proj_title_placeholder")}
-                      className="pl-12 bg-white/5 border-white/10 focus:border-primary h-14 rounded-2xl"
+                      className="pl-12 bg-white/5 border-white/10 focus:border-primary h-11 md:h-14 rounded-2xl"
                       value={formData.title}
                       onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                       required
@@ -123,7 +123,7 @@ export function PostJobModal({ isOpen, onClose, onSuccess }: PostJobModalProps) 
                   <div className="relative">
                     <Tag className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary/50" />
                     <select
-                      className="w-full h-14 pl-12 bg-white/5 border border-white/10 rounded-2xl focus:border-primary outline-none appearance-none"
+                      className="w-full h-11 md:h-14 pl-12 bg-white/5 border border-white/10 rounded-2xl focus:border-primary outline-none appearance-none"
                       value={formData.category}
                       onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                     >
@@ -167,7 +167,7 @@ export function PostJobModal({ isOpen, onClose, onSuccess }: PostJobModalProps) 
                     <Input
                       type="number"
                       placeholder="500"
-                      className="pl-12 bg-white/5 border-white/10 focus:border-primary h-14 rounded-xl"
+                      className="pl-12 bg-white/5 border-white/10 focus:border-primary h-11 md:h-14 rounded-xl"
                       value={formData.budget}
                       onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
                       required
@@ -178,7 +178,7 @@ export function PostJobModal({ isOpen, onClose, onSuccess }: PostJobModalProps) 
                 <div className="space-y-4">
                   <Label className="text-xs uppercase tracking-widest text-white/50">{t("exp_level")}</Label>
                   <select
-                    className="w-full h-14 px-4 bg-white/5 border border-white/10 rounded-xl focus:border-primary outline-none appearance-none"
+                    className="w-full h-11 md:h-14 px-4 bg-white/5 border border-white/10 rounded-xl focus:border-primary outline-none appearance-none"
                     value={formData.experience_level}
                     onChange={(e: any) => setFormData({ ...formData, experience_level: e.target.value })}
                   >
@@ -210,13 +210,13 @@ export function PostJobModal({ isOpen, onClose, onSuccess }: PostJobModalProps) 
                 <div className="flex gap-2">
                   <Input
                     placeholder={t("add_skill_placeholder")}
-                    className="bg-white/5 border-white/10 h-14 rounded-2xl"
+                    className="bg-white/5 border-white/10 h-11 md:h-14 rounded-2xl"
                     value={skillInput}
                     onChange={(e) => setSkillInput(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addSkill())}
                   />
-                  <Button type="button" onClick={addSkill} className="h-14 w-14 rounded-2xl bg-primary">
-                    <Plus className="w-6 h-6" />
+                  <Button type="button" onClick={addSkill} className="h-11 w-11 md:h-14 md:w-14 rounded-2xl bg-primary">
+                    <Plus className="w-5 h-5 md:w-6 md:h-6" />
                   </Button>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -233,10 +233,10 @@ export function PostJobModal({ isOpen, onClose, onSuccess }: PostJobModalProps) 
               </div>
 
               <div className="flex gap-4 pt-4">
-                <Button type="button" variant="ghost" onClick={onClose} className="flex-1 h-14 rounded-2xl glass border-white/10">
+                <Button type="button" variant="ghost" onClick={onClose} className="flex-1 h-11 md:h-14 rounded-2xl glass border-white/10">
                   {t("cancel")}
                 </Button>
-                <Button type="submit" disabled={loading} className="flex-1 h-14 rounded-2xl bg-primary hover:bg-primary/80 shadow-lg shadow-primary/20">
+                <Button type="submit" disabled={loading} className="flex-1 h-11 md:h-14 rounded-2xl bg-primary hover:bg-primary/80 shadow-lg shadow-primary/20">
                   {loading ? t("publishing") : t("publish_job")}
                 </Button>
               </div>

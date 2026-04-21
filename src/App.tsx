@@ -11,6 +11,7 @@ import { JobDetailsPage } from '@/components/jobs/JobDetailsPage';
 import { TalentsPage } from '@/components/talents/TalentsPage';
 import { ProfilePage } from '@/components/profile/ProfilePage';
 import { MessagesPage } from '@/components/messages/MessagesPage';
+import { AdminDashboard } from '@/components/admin/AdminDashboard';
 import '@/lib/i18n';
 
 function PageTransition({ children }: { children: React.ReactNode }) {
@@ -53,6 +54,7 @@ export default function App() {
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/profile/:id" element={<ProfilePage />} />
               <Route path="/messages" element={<MessagesPage />} />
+              <Route path="/admin" element={<div className="pt-32 pb-20 container mx-auto px-6"><AdminDashboard /></div>} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </PageTransition>

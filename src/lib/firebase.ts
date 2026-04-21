@@ -18,24 +18,45 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 
 // Initialize Firestore with forced long-polling to bypass corporate firewalls or iframe blocks
-const dbId = firebaseConfig.firestoreDatabaseId || '(default)';
+const dbId = (firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== 'undefined' && firebaseConfig.firestoreDatabaseId !== '') 
+  ? firebaseConfig.firestoreDatabaseId 
+  : '(default)';
+
+console.log("Initializing Firestore with Database ID:", dbId);
+
 export const db = initializeFirestore(app, {
-  experimentalForceLongPolling: true,
-  host: 'firestore.googleapis.com',
-  ssl: true,
+  experimentalForceLongPolling: true, // Force long polling for maximum compatibility in iframes
+  ignoreUndefinedProperties: true,
+  // @ts-ignore - Some older versions or sub-packages of Firestore SDK still respect this in certain environments
+  useFetchStreams: false, 
 }, dbId);
 
-// Firebase ready
-// Test connection
-const testConnection = async () => {
-  try {
-    // Attempt to fetch a document to verify connection
-    await getDocFromServer(doc(db, 'test', 'connection'));
-    console.log("Firestore connection successful.");
-  } catch (error: any) {
-    console.warn("Firestore Connection Test:", error.message);
-    if (error?.message?.includes('the client is offline') || error?.message?.includes('Could not reach')) {
-      console.error("Please check your Firebase configuration or internet connection. Forced long polling is enabled.");
+// Test connection with retries and exponential backoff
+const testConnection = async (retries = 5) => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      if (i > 0) console.log(`Firestore connection attempt ${i + 1}...`);
+      
+      // Use getDocFromServer to bypass local cache and truly test server connectivity
+      // This path 'test/connection' is explicitly allowed in firestore.rules
+      const testDoc = doc(db, 'test', 'connection');
+      await getDocFromServer(testDoc).catch((err) => {
+        // If it's just 'not-found', the server was reached!
+        if (err.code === 'not-found') return;
+        throw err;
+      });
+      
+      console.log("Firestore connection verified successfully.");
+      return;
+    } catch (error: any) {
+      const waitTime = Math.pow(2, i) * 1000;
+      if (i === retries - 1) {
+        console.error("Firestore connectivity issue:", error.message);
+        console.info("The application will continue in offline mode. Changes will sync when a connection is restored.");
+      } else {
+        console.warn(`Firestore Connection Attempt ${i + 1} failed, retrying in ${waitTime}ms...`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+      }
     }
   }
 };

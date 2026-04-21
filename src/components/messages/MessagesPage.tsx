@@ -1,15 +1,18 @@
 import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect, useRef } from 'react';
 import { db, auth } from '@/lib/firebase';
-import { collection, query, where, getDocs, addDoc, orderBy, onSnapshot, limit } from 'firebase/firestore';
+import { collection, query, where, getDoc, doc, addDoc, orderBy, onSnapshot } from 'firebase/firestore';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Send, Search, User } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 
 export function MessagesPage() {
   const { t } = useTranslation();
+  const [searchParams] = useSearchParams();
+  const initialUserId = searchParams.get('userId');
   const [conversations, setConversations] = useState<any[]>([]);
   const [selectedChat, setSelectedChat] = useState<any>(null);
   const [messages, setMessages] = useState<any[]>([]);
@@ -20,14 +23,13 @@ export function MessagesPage() {
   useEffect(() => {
     if (!auth.currentUser) return;
 
-    // Fetch conversations (unique users we've chatted with)
     const q = query(
       collection(db, 'messages'),
       where('participants', 'array-contains', auth.currentUser.uid),
       orderBy('created_at', 'desc')
     );
 
-    const unsubscribe = onSnapshot(q, (snap) => {
+    const unsubscribe = onSnapshot(q, async (snap) => {
       const msgs = snap.docs.map(d => d.data());
       const uniqueUsers = new Map();
       
@@ -44,12 +46,44 @@ export function MessagesPage() {
         }
       });
 
-      setConversations(Array.from(uniqueUsers.values()));
+      // If there's an initialUserId that we haven't chatted with yet, manually fetch their details and add to the list
+      if (initialUserId && !uniqueUsers.has(initialUserId)) {
+        try {
+          const userDoc = await getDoc(doc(db, 'users', initialUserId));
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            const newChat = {
+              id: initialUserId,
+              lastMessage: 'Yangi xabar yozish...', // or 'New message...'
+              time: new Date().toISOString(),
+              name: userData.full_name || userData.email || 'User',
+              avatar: userData.photo_url || ''
+            };
+            uniqueUsers.set(initialUserId, newChat);
+          }
+        } catch (error) {
+          console.error("Error fetching initial user for chat:", error);
+        }
+      }
+
+      const conversationsArray = Array.from(uniqueUsers.values());
+      // Sort by time descending
+      conversationsArray.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+
+      setConversations(conversationsArray);
+      
+      if (initialUserId && !selectedChat) {
+         const autoSelect = conversationsArray.find(c => c.id === initialUserId);
+         if (autoSelect) setSelectedChat(autoSelect);
+      } else if (!selectedChat && conversationsArray.length > 0) {
+         setSelectedChat(conversationsArray[0]);
+      }
+      
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [initialUserId]);
 
   useEffect(() => {
     if (!selectedChat || !auth.currentUser) return;

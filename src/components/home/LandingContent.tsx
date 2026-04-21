@@ -1,6 +1,19 @@
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Users, Briefcase, DollarSign, Star, CheckCircle2, Trophy, Globe, Heart, Zap, Shield, Sparkles } from 'lucide-react';
+import { 
+  Users, Briefcase, DollarSign, Star, 
+  CheckCircle2, Trophy, Globe, Heart, 
+  Zap, Shield, Sparkles, TrendingUp, 
+  ShieldCheck, Clock 
+} from 'lucide-react';
+
+import { MarketPulse } from './MarketPulse';
+import { auth, db } from '@/lib/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { ADMIN_USERS } from '@/constants';
+import React from 'react';
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 30 },
@@ -17,6 +30,26 @@ const staggerContainer = {
 
 export function LandingContent() {
   const { t } = useTranslation();
+  const [isPremium, setIsPremium] = React.useState(false);
+
+  React.useEffect(() => {
+    const unsubAuth = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        const isAdmin = user.email && ADMIN_USERS[user.email.toLowerCase()];
+        const unsubProfile = onSnapshot(doc(db, 'users', user.uid), (snap) => {
+          if (snap.exists()) {
+            setIsPremium(snap.data().is_premium || isAdmin || false);
+          } else {
+            setIsPremium(isAdmin || false);
+          }
+        });
+        return () => unsubProfile();
+      } else {
+        setIsPremium(false);
+      }
+    });
+    return () => unsubAuth();
+  }, []);
 
   return (
     <div className="space-y-40 pb-40">
@@ -36,7 +69,12 @@ export function LandingContent() {
                 <Sparkles className="w-6 h-6 md:w-8 md:h-8 text-primary" />
               </div>
               <h3 className="text-3xl md:text-6xl font-display font-bold mb-4 md:mb-6 tracking-tight text-sharp">{t("feat_main_title")} <br/><span className="text-primary">{t("feat_main_italic")}</span></h3>
-              <p className="text-indigo-950/60 text-base md:text-xl max-w-lg leading-relaxed text-sharp">{t("feat_main_desc")}</p>
+              <p className="text-indigo-950/60 text-base md:text-xl max-w-lg leading-relaxed text-sharp mb-8">{t("feat_main_desc")}</p>
+              
+              {/* Professional Tool Interface Mockup */}
+              <div className="hidden lg:block w-full max-w-2xl mt-12">
+                <MarketPulse isPremium={isPremium} />
+              </div>
             </div>
             <div className="flex gap-3 md:gap-4 mt-8 md:mt-10">
               <div className="px-5 md:px-6 py-2 md:py-3 rounded-full liquid-glass border-indigo-900/10 text-[10px] md:text-xs font-bold tracking-widest uppercase text-indigo-950/40 text-sharp">{t("feat_ui")}</div>
@@ -171,9 +209,9 @@ export function LandingContent() {
           >
             <h2 className="text-4xl md:text-8xl font-display font-bold mb-8 md:mb-12 tracking-tighter text-sharp leading-[0.9]">{t("cta_title")} <br/><span className="text-primary">{t("cta_italic")}</span></h2>
             <p className="text-indigo-900/60 text-base md:text-2xl max-w-2xl mx-auto mb-10 md:mb-16 leading-relaxed font-light text-sharp">{t("cta_desc")}</p>
-            <button className="h-16 md:h-20 px-10 md:px-14 bg-primary text-white font-black uppercase tracking-widest rounded-2xl md:rounded-3xl text-sm md:text-base hover:scale-105 active:scale-95 transition-all duration-300 shadow-xl">
+            <Link to="/signup" className="inline-flex items-center justify-center h-11 md:h-16 px-10 md:px-14 bg-primary text-white font-black uppercase tracking-widest rounded-2xl md:rounded-3xl text-sm md:text-base hover:scale-105 active:scale-95 transition-all duration-300 shadow-xl">
               {t("cta_button")}
-            </button>
+            </Link>
           </motion.div>
         </div>
       </section>

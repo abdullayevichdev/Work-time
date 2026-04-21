@@ -103,6 +103,21 @@
         "created_at": { "type": "string", "format": "date-time" }
       },
       "required": ["user_id", "amount", "type", "status", "created_at"]
+    },
+    "PremiumRequest": {
+      "title": "PremiumRequest",
+      "description": "User intent to upgrade to premium status.",
+      "type": "object",
+      "properties": {
+        "user_id": { "type": "string" },
+        "user_name": { "type": "string" },
+        "user_email": { "type": "string", "format": "email" },
+        "receipt_name": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "verified", "rejected", "cancelled"] },
+        "created_at": { "type": "string", "format": "date-time" },
+        "is_auto_verified": { "type": "boolean" }
+      },
+      "required": ["user_id", "status", "created_at"]
     }
   },
   "firestore": {
@@ -129,6 +144,10 @@
     "/transactions/{id}": {
       "schema": "Transaction",
       "description": "Financial logs"
+    },
+    "/premium_requests/{id}": {
+      "schema": "PremiumRequest",
+      "description": "Premium upgrade requests"
     }
   }
 }

@@ -20,8 +20,11 @@ import { toast } from 'sonner';
 import { handleFirestoreError, OperationType } from '@/lib/firestore-errors';
 import { useRef } from 'react';
 import { Loader2 } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
 
 export function ProfilePage() {
+  const { id } = useParams();
+  const navigate = useNavigate();
   const { t } = useTranslation();
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
@@ -42,31 +45,34 @@ export function ProfilePage() {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const isOwnProfile = !id || (user && user.uid === id);
+
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setUser(user);
-      if (user) {
+    let unsubscribe = () => {};
+    
+    // Abstract the fetch logic
+    const fetchProfile = async (targetId: string, currentUser: any) => {
+      try {
+        const docRef = doc(db, 'users', targetId);
+        let docSnap;
         try {
-          const docRef = doc(db, 'users', user.uid);
-          let docSnap;
+          docSnap = await getDocFromServer(docRef);
+        } catch (e) {
+          console.warn('Initial server fetch failed, retrying with default getDoc', e);
           try {
-            // Using getDocFromServer to avoid initial "missing permissions" due to stale cache
-            docSnap = await getDocFromServer(docRef);
-          } catch (e) {
-            console.warn('Initial server fetch failed, retrying with default getDoc', e);
-            try {
-              docSnap = await getDoc(docRef);
-            } catch (e2) {
-              handleFirestoreError(e2, OperationType.GET, `users/${user.uid}`);
-            }
+            docSnap = await getDoc(docRef);
+          } catch (e2) {
+            handleFirestoreError(e2, OperationType.GET, `users/${targetId}`);
           }
+        }
+        
+        if (docSnap?.exists()) {
+          const data = docSnap.data();
+          setProfile({ id: targetId, ...data });
           
-          if (docSnap?.exists()) {
-            const data = docSnap.data();
-            setProfile(data);
-            
-            // Initialize edit states
-            setEditedName(data.full_name || user.displayName || '');
+          if (currentUser && currentUser.uid === targetId) {
+            // Initialize edit states only if own profile
+            setEditedName(data.full_name || currentUser.displayName || '');
             setEditedTitle(data.title || 'Professional Creator');
             setEditedBio(data.bio || '');
             setEditedSkills(data.skills?.join(', ') || '');
@@ -77,18 +83,31 @@ export function ProfilePage() {
             setEditedLinkedin(data.socials?.linkedin || '');
             setEditedRole(data.role || 'freelancer');
           }
-        } catch (error: any) {
-          console.error('Error fetching profile detail:', {
-            code: error.code,
-            message: error.message,
-            stack: error.stack
-          });
+        } else {
+          setProfile(null);
         }
+      } catch (error: any) {
+        console.error('Error fetching profile detail:', error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
+    };
+
+    // Auto-fetch logic based on auth
+    unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      
+      const targetProfileId = id || currentUser?.uid;
+      
+      if (targetProfileId) {
+        fetchProfile(targetProfileId, currentUser);
+      } else {
+        setLoading(false); // Not logged in and no ID specified
+      }
     });
+
     return () => unsubscribe();
-  }, []);
+  }, [id]);
 
   const handleSave = async () => {
     if (!user) return;
@@ -132,18 +151,18 @@ export function ProfilePage() {
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      toast.error('Iltimos, faqat rasm yuklang');
+      toast.error(t('error_only_image'));
       return;
     }
 
     // Validate size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('Rasm o\'lchami juda katta (max 5MB)');
+      toast.error(t('error_image_size'));
       return;
     }
 
     setUploading(true);
-    const toastId = toast.loading('Rasm yuklanmoqda...');
+    const toastId = toast.loading(t('uploading_image'));
 
     try {
       // Client-side image optimization (Resize to 256x256 and compress)
@@ -199,11 +218,11 @@ export function ProfilePage() {
       setProfile((prev: any) => ({ ...prev, photo_url: optimizedImage }));
       
       toast.dismiss(toastId);
-      toast.success('Profil rasmi yangilandi');
+      toast.success(t('image_updated'));
     } catch (error: any) {
       console.error('Image upload error:', error);
       toast.dismiss(toastId);
-      toast.error('Rasmni yuklashda xatolik yuz berdi');
+      toast.error(t('error_upload_image'));
     } finally {
       setUploading(false);
     }
@@ -246,6 +265,8 @@ export function ProfilePage() {
               <div className="absolute top-0 right-0 p-5">
                 {profile?.is_premium ? (
                   <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-black border-none font-black text-[10px] tracking-widest shadow-lg shadow-yellow-500/20">PREMIUM</Badge>
+                ) : profile?.premium_status === 'pending' ? (
+                  <Badge className="bg-amber-500/20 text-amber-500 border-amber-500/30 font-black text-[10px] tracking-widest">PENDING RENEWAL</Badge>
                 ) : (
                   <Badge variant="outline" className="border-indigo-900/10 text-indigo-900/40 font-bold text-[10px] tracking-widest">{t('free_plan').toUpperCase()}</Badge>
                 )}
@@ -276,15 +297,17 @@ export function ProfilePage() {
                   className="hidden"
                 />
 
-                <motion.button 
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading}
-                  className="absolute bottom-1 right-1 w-10 h-10 rounded-full bg-primary flex items-center justify-center border-4 border-white shadow-xl z-20 hover:brightness-110 transition-all disabled:opacity-50"
-                >
-                  <Camera className="w-4 h-4 text-white" />
-                </motion.button>
+                {isOwnProfile && (
+                  <motion.button 
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="absolute bottom-1 right-1 w-10 h-10 rounded-full bg-primary flex items-center justify-center border-4 border-white shadow-xl z-20 hover:brightness-110 transition-all disabled:opacity-50"
+                  >
+                    <Camera className="w-4 h-4 text-white" />
+                  </motion.button>
+                )}
               </div>
 
               {isEditing ? (
@@ -355,15 +378,22 @@ export function ProfilePage() {
               </div>
 
               <div className="flex gap-3">
-                {isEditing ? (
-                  <Button onClick={handleSave} className="flex-1 bg-primary hover:bg-primary/80 h-12 rounded-xl">
+                {!isOwnProfile ? (
+                  <Button 
+                    onClick={() => navigate(`/messages?userId=${profile.id}`)}
+                    className="flex-1 bg-primary text-white hover:bg-primary/90 h-11 md:h-12 rounded-xl font-bold text-sharp"
+                  >
+                    <Mail className="w-4 h-4 mr-2" /> Message
+                  </Button>
+                ) : isEditing ? (
+                  <Button onClick={handleSave} className="flex-1 bg-primary hover:bg-primary/80 h-11 md:h-12 rounded-xl">
                     <Check className="w-4 h-4 mr-2" /> {t('save_changes')}
                   </Button>
                 ) : (
                   <Button 
                     onClick={() => setIsEditing(true)} 
                     variant="outline"
-                    className="flex-1 border-indigo-900/10 hover:bg-white/40 text-indigo-950 h-12 rounded-xl font-bold text-sharp"
+                    className="flex-1 border-indigo-900/10 hover:bg-white/40 text-indigo-950 h-11 md:h-12 rounded-xl font-bold text-sharp"
                   >
                     <Edit3 className="w-4 h-4 mr-2 text-primary" /> {t('edit_profile')}
                   </Button>

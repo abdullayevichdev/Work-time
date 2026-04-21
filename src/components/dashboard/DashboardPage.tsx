@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { motion } from 'motion/react';
 import { 
   Briefcase, MessageSquare, 
-  TrendingUp, Users, DollarSign, Clock, ArrowUpRight, Star
+  TrendingUp, Users, DollarSign, Clock, ArrowUpRight, Star, Loader2
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, onSnapshot, collection, query, where, orderBy, limit } from 'firebase/firestore';
 import { PostJobModal } from '@/components/jobs/PostJobModal';
+import { MarketPulse } from '@/components/home/MarketPulse';
 import { handleFirestoreError, OperationType } from '@/lib/firestore-errors';
 import { ApplicationsList } from '@/components/jobs/ApplicationsList';
 import { PremiumModal } from '@/components/premium/PremiumModal';
@@ -169,7 +170,7 @@ export function DashboardPage() {
             <Button 
               onClick={() => setIsPremiumModalOpen(true)}
               variant="outline"
-              className="h-14 px-8 border-yellow-500/30 text-yellow-500 hover:bg-yellow-500/10 rounded-2xl font-bold flex-1 sm:flex-none"
+              className="h-11 md:h-14 px-6 md:px-8 border-yellow-500/30 text-yellow-500 hover:bg-yellow-500/10 rounded-2xl font-bold flex-1 sm:flex-none"
             >
               {t('upgrade_premium')}
             </Button>
@@ -177,7 +178,7 @@ export function DashboardPage() {
           {profile?.role === 'client' && (
             <Button 
               onClick={() => setIsPostModalOpen(true)}
-              className="h-14 px-8 bg-primary hover:bg-primary/80 shadow-[0_0_20px_rgba(139,92,246,0.3)] rounded-2xl font-bold flex-1 sm:flex-none"
+              className="h-11 md:h-14 px-6 md:px-8 bg-primary hover:bg-primary/80 shadow-[0_0_20px_rgba(139,92,246,0.3)] rounded-2xl font-bold flex-1 sm:flex-none"
             >
               {t('post_new_job')}
             </Button>
@@ -273,6 +274,26 @@ export function DashboardPage() {
 
             {/* Quick Actions / Profile Completion */}
             <div className="space-y-6">
+              {profile?.is_premium && (
+                <section className="animate-in fade-in slide-in-from-right-4 duration-700">
+                  <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-950/40 mb-4 px-2">Live Marketplace Data</h3>
+                  <MarketPulse isPremium={true} />
+                </section>
+              )}
+
+              {profile?.premium_status === 'pending' && (
+                <Card className="glass border-yellow-500/30 bg-yellow-500/5 relative overflow-hidden group">
+                  <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/10 to-transparent animate-pulse" />
+                  <CardContent className="pt-6 relative z-10 flex flex-col items-center text-center">
+                    <Loader2 className="w-10 h-10 text-yellow-500 animate-spin mb-4" />
+                    <h3 className="text-lg font-bold text-yellow-700 mb-2">{t('verifying_payment')}</h3>
+                    <p className="text-xs text-yellow-700/60 font-medium">
+                      Tizim chekning haqiqiyligini tekshirmoqda. Bu bir necha daqiqa vaqt olishi mumkin.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+
               <Card className="glass border-white/10 overflow-hidden relative">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 blur-3xl -mr-16 -mt-16" />
                 <CardHeader>

@@ -8,12 +8,13 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { db, auth } from '@/lib/firebase';
-import { collection, query, onSnapshot, orderBy } from 'firebase/firestore';
+import { collection, query, onSnapshot, orderBy, doc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { Link } from 'react-router-dom';
 import { Job } from '@/types';
 import { toast } from 'sonner';
 import { ApplyModal } from './ApplyModal';
+import { PremiumModal } from '@/components/premium/PremiumModal';
 
 export function JobsPage() {
   const { t } = useTranslation();
@@ -22,11 +23,21 @@ export function JobsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
+  const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
 
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-      setUser(user);
+    let unsubProfile: (() => void) | undefined;
+    const unsubscribeAuth = onAuthStateChanged(auth, (u) => {
+      setUser(u);
+      if (u) {
+        unsubProfile = onSnapshot(doc(db, 'users', u.uid), (snap) => {
+          if (snap.exists()) setProfile(snap.data());
+        });
+      } else {
+        setProfile(null);
+      }
     });
 
     setLoading(true);
@@ -79,13 +90,14 @@ export function JobsPage() {
       setLoading(false);
     }, (error) => {
       console.error('Firebase snapshot error:', error);
-      toast.error('Real-time sync failed. Please refresh.');
+      toast.error(t('error_sync_failed'));
       setLoading(false);
     });
 
     return () => {
       unsubscribeAuth();
       unsubscribeJobs();
+      if (unsubProfile) unsubProfile();
     };
   }, []);
 
@@ -109,6 +121,11 @@ export function JobsPage() {
         isOpen={isApplyModalOpen} 
         onClose={() => setIsApplyModalOpen(false)} 
         job={selectedJob} 
+      />
+
+      <PremiumModal
+        isOpen={isPremiumModalOpen}
+        onClose={() => setIsPremiumModalOpen(false)}
       />
       
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-12">
@@ -157,16 +174,24 @@ export function JobsPage() {
             </CardContent>
           </Card>
 
-          <Card className="glass border-white/10 bg-gradient-to-br from-primary/20 to-transparent">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-2 text-primary mb-4">
-                <Star className="w-5 h-5 fill-current" />
-                <span className="font-bold">{t('premium_benefits')}</span>
-              </div>
-              <p className="text-sm text-white/60 mb-6">{t('premium_desc')}</p>
-              <Button className="w-full bg-primary hover:bg-primary/80">{t('upgrade')}</Button>
-            </CardContent>
-          </Card>
+          {!profile?.is_premium && (
+            <Card className="glass border-white/10 bg-gradient-to-br from-primary/20 to-transparent relative overflow-hidden group">
+              <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <CardContent className="pt-6 relative z-10">
+                <div className="flex items-center gap-2 text-primary mb-4">
+                  <Star className="w-5 h-5 fill-current animate-pulse" />
+                  <span className="font-bold uppercase tracking-widest text-xs">{t('premium_benefits')}</span>
+                </div>
+                <p className="text-sm text-indigo-950/60 mb-6 font-medium leading-relaxed">{t('premium_desc')}</p>
+                <Button 
+                  onClick={() => setIsPremiumModalOpen(true)} 
+                  className="w-full bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 h-11 rounded-xl font-bold uppercase tracking-widest text-[11px] transition-all hover:scale-[1.02]"
+                >
+                  {t('upgrade')}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Jobs List */}
@@ -207,7 +232,7 @@ export function JobsPage() {
                             <MapPin className="w-3 h-3" /> {t('remote')}
                           </span>
                           <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" /> 2h ago
+                            <Clock className="w-3 h-3" /> {t('posted_recently')}
                           </span>
                         </div>
                       </div>
@@ -222,6 +247,16 @@ export function JobsPage() {
                     </p>
                     <div className="flex flex-wrap gap-2">
                       <Badge variant="secondary" className="bg-white/40 border-indigo-900/10 text-indigo-900/60 text-sharp">{t(`cat_${job.category?.toLowerCase() || 'dev'}`)}</Badge>
+                      {profile?.is_premium && (
+                        <Badge className="bg-yellow-400/20 text-yellow-600 border-yellow-400/30 font-black text-[9px] tracking-widest px-2 animate-pulse">
+                          0% COMMISSION
+                        </Badge>
+                      )}
+                      {profile?.is_premium && (
+                        <Badge className="bg-primary/20 text-primary border-primary/30 font-black text-[9px] tracking-widest px-2 group-hover:scale-110 transition-transform">
+                          PREMIUM TALENT
+                        </Badge>
+                      )}
                     </div>
                   </CardContent>
                   <CardFooter className="flex flex-col sm:flex-row items-center justify-between border-t border-indigo-900/5 pt-6 gap-4">
@@ -230,11 +265,12 @@ export function JobsPage() {
                       <span className="text-indigo-900/40 text-xs md:text-sm font-medium text-sharp">/ {job.budget_type === 'hourly' ? t('hr') : t('project')}</span>
                     </div>
                     <div className="flex gap-2 w-full sm:w-auto order-1 sm:order-2">
-                      <Link to={`/jobs/${job.id}`} className="flex-1 sm:flex-initial">
-                        <Button variant="ghost" className="glass border-white/10 hover:bg-white/5 w-full text-xs sm:text-sm h-9 md:h-10">
-                          {t('view_details')}
-                        </Button>
-                      </Link>
+                      <Button 
+                        variant="ghost" 
+                        className="glass border-white/10 hover:bg-white/5 flex-1 sm:flex-initial text-xs sm:text-sm h-9 md:h-10"
+                        nativeButton={false}
+                        render={<Link to={`/jobs/${job.id}`}>{t('view_details')}</Link>}
+                      />
                       <Button 
                         onClick={() => handleApply(job)}
                         className="flex-1 sm:flex-initial bg-primary hover:bg-primary/80 text-white shadow-lg shadow-primary/20 text-xs sm:text-sm h-9 md:h-10"

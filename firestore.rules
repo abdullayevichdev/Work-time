@@ -19,13 +19,21 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    function isAdmin() {
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        request.auth.token.email.lower() in [
+          'abdulxayavazxanov2012@gmail.com',
+          'unknownprogrammerdev@gmail.com',
+          'tuyginovsardor4@gmail.com'
+        ]
+      );
+    }
+
     // 3. VALIDATION HELPERS
     function isValidUserProfile(data) {
-      // Use data.get() for defensive programming against missing fields during partial updates
       return data.get('full_name', '') is string && 
-             data.get('email', '') is string &&
-             (data.get('role', 'freelancer') in ['freelancer', 'client', 'admin']) &&
-             (data.get('photo_url', '') is string);
+             data.get('email', '') is string;
     }
 
     // 4. COLLECTION RULES
@@ -40,11 +48,12 @@ service cloud.firestore {
       // Anyone signed in can view profiles (needed for Talents page)
       allow read: if isSignedIn();
       allow create: if isOwner(userId) && isValidUserProfile(request.resource.data);
-      allow update: if isOwner(userId) && isValidUserProfile(request.resource.data) &&
+      allow update: if (isOwner(userId) || isAdmin()) && isValidUserProfile(request.resource.data) &&
                       request.resource.data.diff(resource.data).affectedKeys().hasOnly([
                         'full_name', 'bio', 'title', 'skills', 'hourly_rate', 
                         'location', 'socials', 'photo_url', 'last_updated', 
-                        'is_new_user', 'role', 'is_premium', 'email', 'created_at'
+                        'is_new_user', 'role', 'is_premium', 'email', 'created_at',
+                        'premium_since', 'premium_status'
                       ]);
     }
 
@@ -76,12 +85,14 @@ service cloud.firestore {
 
     // Premium Requests Collection (for Admin & Users)
     match /premium_requests/{requestId} {
-      allow list: if isSignedIn() && (resource.data.user_id == request.auth.uid || 
-                    exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
-      allow get: if isSignedIn() && (resource.data.user_id == request.auth.uid || 
-                    exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
-      allow create: if isSignedIn() && request.auth.uid == request.resource.data.user_id;
-      allow update: if exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+      allow list: if isAdmin() || (isSignedIn() && resource.data.user_id == request.auth.uid);
+      allow get: if isAdmin() || (isSignedIn() && resource.data.user_id == request.auth.uid);
+      allow create: if isSignedIn() && request.auth.uid == request.resource.data.user_id &&
+                      request.resource.data.status == 'pending';
+      allow update: if isAdmin() ||
+                      (isSignedIn() && request.auth.uid == resource.data.user_id && 
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']) &&
+                       request.resource.data.status == 'cancelled');
     }
 
     // Admins helper (if needed for the rules above)
