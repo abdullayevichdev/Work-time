@@ -65,11 +65,11 @@ export function LandingContent() {
           {/* Main Large Card */}
           <div className="md:col-span-4 lg:col-span-4 liquid-card p-6 md:p-12 flex flex-col justify-between min-h-[300px] md:min-h-[450px]">
             <div>
-              <div className="w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-primary/20 flex items-center justify-center mb-8 md:mb-10 shadow-inner">
-                <Sparkles className="w-6 h-6 md:w-8 md:h-8 text-primary" />
+              <div className="w-10 h-10 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-primary/20 flex items-center justify-center mb-6 md:mb-10 shadow-inner">
+                <Sparkles className="w-5 h-5 md:w-8 md:h-8 text-primary" />
               </div>
-              <h3 className="text-3xl md:text-6xl font-display font-bold mb-4 md:mb-6 tracking-tight text-sharp">{t("feat_main_title")} <br/><span className="text-primary">{t("feat_main_italic")}</span></h3>
-              <p className="text-indigo-950/60 text-base md:text-xl max-w-lg leading-relaxed text-sharp mb-8">{t("feat_main_desc")}</p>
+              <h3 className="text-2xl md:text-6xl font-display font-bold mb-3 md:mb-6 tracking-tight text-sharp">{t("feat_main_title")} <br/><span className="text-primary">{t("feat_main_italic")}</span></h3>
+              <p className="text-indigo-950/60 text-sm md:text-xl max-w-lg leading-relaxed text-sharp mb-6 md:mb-8">{t("feat_main_desc")}</p>
               
               {/* Professional Tool Interface Mockup */}
               <div className="hidden lg:block w-full max-w-2xl mt-12">
@@ -84,30 +84,30 @@ export function LandingContent() {
 
           {/* Secure Card */}
           <div className="md:col-span-2 lg:col-span-2 liquid-card p-6 md:p-12 flex flex-col justify-center">
-            <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-8">
-              <Shield className="w-7 h-7 md:w-8 md:h-8 text-primary" />
+            <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-primary/10 flex items-center justify-center mb-6 md:mb-8">
+              <Shield className="w-6 h-6 md:w-8 md:h-8 text-primary" />
             </div>
-            <h3 className="text-xl md:text-3xl font-bold mb-4 md:mb-5 text-sharp">{t("feat_secure_title")}</h3>
-            <p className="text-sm md:text-lg text-indigo-950/60 leading-relaxed text-sharp">{t("feat_secure_desc")}</p>
+            <h3 className="text-lg md:text-3xl font-bold mb-3 md:mb-5 text-sharp">{t("feat_secure_title")}</h3>
+            <p className="text-xs md:text-lg text-indigo-950/60 leading-relaxed text-sharp">{t("feat_secure_desc")}</p>
           </div>
 
           {/* Realtime Card */}
           <div className="md:col-span-3 lg:col-span-2 liquid-card p-6 md:p-12 flex flex-col justify-center">
-            <div className="w-14 h-14 rounded-2xl bg-yellow-400/20 flex items-center justify-center mb-8">
-              <Zap className="w-7 h-7 md:w-8 md:h-8 text-yellow-600" />
+            <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-yellow-400/20 flex items-center justify-center mb-6 md:mb-8">
+              <Zap className="w-6 h-6 md:w-8 md:h-8 text-yellow-600" />
             </div>
-            <h3 className="text-xl md:text-3xl font-bold mb-4 md:mb-5 text-sharp">{t("feat_pulse_title")}</h3>
-            <p className="text-sm md:text-lg text-indigo-950/60 leading-relaxed text-sharp">{t("feat_pulse_desc")}</p>
+            <h3 className="text-lg md:text-3xl font-bold mb-3 md:mb-5 text-sharp">{t("feat_pulse_title")}</h3>
+            <p className="text-xs md:text-lg text-indigo-950/60 leading-relaxed text-sharp">{t("feat_pulse_desc")}</p>
           </div>
 
           {/* Global Card */}
           <div className="md:col-span-3 lg:col-span-4 liquid-card p-8 md:p-12 flex flex-col md:flex-row items-center gap-10 md:gap-14">
              <div className="flex-1">
-                <div className="w-14 h-14 rounded-2xl bg-blue-400/20 flex items-center justify-center mb-8">
-                  <Globe className="w-7 h-7 md:w-8 md:h-8 text-blue-600" />
+                <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-blue-400/20 flex items-center justify-center mb-6 md:mb-8">
+                  <Globe className="w-6 h-6 md:w-8 md:h-8 text-blue-600" />
                 </div>
-                <h3 className="text-xl md:text-3xl font-bold mb-4 md:mb-5 text-sharp">{t("feat_global_title")}</h3>
-                <p className="text-sm md:text-lg text-indigo-950/60 leading-relaxed text-sharp">{t("feat_global_desc")}</p>
+                <h3 className="text-lg md:text-3xl font-bold mb-3 md:mb-5 text-sharp">{t("feat_global_title")}</h3>
+                <p className="text-xs md:text-lg text-indigo-950/60 leading-relaxed text-sharp">{t("feat_global_desc")}</p>
              </div>
              <div className="w-full md:w-1/2 h-64 rounded-3xl liquid-glass border-indigo-900/10 bg-white/40 relative overflow-hidden group">
                 <div className="absolute inset-0 bg-primary/5 opacity-30" />
@@ -131,8 +131,8 @@ export function LandingContent() {
               className="text-center p-4 md:p-12 liquid-glass border-white/60 bg-white/40 hover:border-primary transition-all duration-300 shadow-xl"
             >
               <stat.icon className={`w-6 h-6 md:w-12 md:h-12 mx-auto mb-4 md:mb-8 ${stat.color}`} />
-              <h3 className="text-xl md:text-5xl font-display font-bold mb-1 md:mb-3 tracking-tighter text-sharp">{stat.value}</h3>
-              <p className="text-[8px] md:text-xs text-indigo-900/40 uppercase tracking-[0.2em] font-bold text-sharp">{stat.label}</p>
+              <h3 className="text-lg md:text-5xl font-display font-bold mb-1 md:mb-3 tracking-tighter text-sharp">{stat.value}</h3>
+              <p className="text-[7px] md:text-xs text-indigo-900/40 uppercase tracking-[0.2em] font-bold text-sharp">{stat.label}</p>
             </div>
           ))}
         </div>
@@ -142,8 +142,8 @@ export function LandingContent() {
       <section className="container mx-auto px-6">
         <div className="flex flex-col md:flex-row gap-12 md:gap-20 items-center">
           <div className="w-full md:w-1/3 text-center md:text-left">
-            <h2 className="text-3xl md:text-6xl font-display font-medium mb-6 md:mb-8 leading-tight text-sharp">{t("flow_title")} <br/><span className="text-primary font-bold uppercase tracking-widest text-xl md:text-4xl">{t("flow_italic")}</span></h2>
-            <p className="text-indigo-900/40 text-base md:text-lg leading-relaxed text-sharp">{t("flow_desc")}</p>
+            <h2 className="text-2xl md:text-6xl font-display font-medium mb-4 md:mb-8 leading-tight text-sharp">{t("flow_title")} <br/><span className="text-primary font-bold uppercase tracking-widest text-lg md:text-4xl">{t("flow_italic")}</span></h2>
+            <p className="text-indigo-900/40 text-sm md:text-lg leading-relaxed text-sharp">{t("flow_desc")}</p>
           </div>
           
           <div className="flex-1 space-y-6 md:space-y-8 w-full">
@@ -162,8 +162,8 @@ export function LandingContent() {
               >
                 <div className="text-3xl md:text-4xl font-display font-light text-indigo-900/10 group-hover:text-primary transition-colors duration-500 text-sharp">{item.step}</div>
                 <div>
-                  <h3 className="text-xl md:text-2xl font-bold mb-2 md:mb-3 text-sharp">{item.title}</h3>
-                  <p className="text-sm md:text-base text-indigo-900/40 leading-relaxed max-w-md text-sharp">{item.desc}</p>
+                  <h3 className="text-lg md:text-2xl font-bold mb-1 md:mb-3 text-sharp">{item.title}</h3>
+                  <p className="text-xs md:text-base text-indigo-900/40 leading-relaxed max-w-md text-sharp">{item.desc}</p>
                 </div>
               </motion.div>
             ))}
@@ -189,7 +189,7 @@ export function LandingContent() {
                   <p className="text-[10px] text-indigo-900/30 tracking-widest uppercase font-bold text-sharp">{t.role}</p>
                 </div>
               </div>
-              <p className="text-indigo-950/60 text-base md:text-lg font-medium whitespace-normal leading-relaxed text-sharp">"{t.text}"</p>
+              <p className="text-indigo-950/60 text-sm md:text-lg font-medium whitespace-normal leading-relaxed text-sharp">"{t.text}"</p>
             </div>
           ))}
         </div>
@@ -207,9 +207,9 @@ export function LandingContent() {
             viewport={{ once: true }}
             className="relative z-10"
           >
-            <h2 className="text-4xl md:text-8xl font-display font-bold mb-8 md:mb-12 tracking-tighter text-sharp leading-[0.9]">{t("cta_title")} <br/><span className="text-primary">{t("cta_italic")}</span></h2>
-            <p className="text-indigo-900/60 text-base md:text-2xl max-w-2xl mx-auto mb-10 md:mb-16 leading-relaxed font-light text-sharp">{t("cta_desc")}</p>
-            <Link to="/signup" className="inline-flex items-center justify-center h-11 md:h-16 px-10 md:px-14 bg-primary text-white font-black uppercase tracking-widest rounded-2xl md:rounded-3xl text-sm md:text-base hover:scale-105 active:scale-95 transition-all duration-300 shadow-xl">
+            <h2 className="text-3xl md:text-8xl font-display font-bold mb-6 md:mb-12 tracking-tighter text-sharp leading-[0.9]">{t("cta_title")} <br/><span className="text-primary">{t("cta_italic")}</span></h2>
+            <p className="text-indigo-900/60 text-sm md:text-2xl max-w-2xl mx-auto mb-8 md:mb-16 leading-relaxed font-light text-sharp">{t("cta_desc")}</p>
+            <Link to="/signup" className="inline-flex items-center justify-center h-10 md:h-16 px-8 md:px-14 bg-primary text-white font-black uppercase tracking-widest rounded-xl md:rounded-3xl text-xs md:text-base hover:scale-105 active:scale-95 transition-all duration-300 shadow-xl">
               {t("cta_button")}
             </Link>
           </motion.div>

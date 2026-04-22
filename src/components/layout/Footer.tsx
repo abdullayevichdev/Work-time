@@ -6,15 +6,12 @@ export function Footer() {
   const { t } = useTranslation();
 
   return (
-    <footer className="pt-24 pb-12 border-t border-indigo-900/5 bg-white/40 backdrop-blur-3xl">
+    <footer className="pt-16 md:pt-24 pb-8 md:pb-12 border-t border-indigo-900/5 bg-white/40 backdrop-blur-3xl">
       <div className="container mx-auto px-6 text-indigo-950">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-20">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12 mb-12 md:mb-20">
           <div className="space-y-8">
             <Link to="/" className="flex items-center gap-4 group">
-              <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center shadow-lg transition-transform duration-500">
-                <span className="text-2xl font-display font-black text-white text-sharp leading-none">W</span>
-              </div>
-              <span className="text-2xl font-display font-black tracking-tighter text-indigo-900/60 text-sharp">WorkTime</span>
+              <img src="/logo.png" alt="WorkTime Logo" className="h-10 md:h-12 w-auto object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.2)] group-hover:scale-105 transition-transform duration-500" />
             </Link>
             <p className="text-indigo-900/60 leading-relaxed text-[15px] text-sharp">
               {t("footer_desc")}
@@ -68,9 +65,9 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="pt-8 border-t border-indigo-900/5 flex flex-col md:flex-row items-center justify-between gap-6 text-sm text-indigo-900/40 text-sharp font-medium">
-          <p>© 2026 {t("footer_rights")}</p>
-          <div className="flex items-center gap-6">
+        <div className="pt-8 border-t border-indigo-900/5 flex flex-col md:flex-row items-center justify-between gap-4 md:gap-6 text-xs md:text-sm text-indigo-900/40 text-sharp font-medium">
+          <p className="text-center md:text-left">© 2026 {t("footer_rights")}</p>
+          <div className="flex flex-wrap justify-center items-center gap-4 md:gap-6">
             <a href="#" className="hover:text-primary transition-colors">{t("footer_privacy")}</a>
             <a href="#" className="hover:text-primary transition-colors">{t("footer_terms")}</a>
             <a href="#" className="hover:text-primary transition-colors">{t("footer_cookies")}</a>

@@ -61,12 +61,7 @@ export function Navbar() {
       <div className={`container mx-auto px-4 md:px-6 transition-all duration-700 ${isScrolled ? 'max-w-[95%] md:max-w-4xl' : 'max-w-7xl'}`}>
         <div className={`flex items-center justify-between transition-all duration-700 ${isScrolled ? 'glass-dark rounded-2xl md:rounded-full px-6 md:px-8 py-3' : 'bg-transparent'}`}>
           <Link to="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-2xl bg-primary flex items-center justify-center shadow-[0_0_30px_rgba(139,92,246,0.6)] group-hover:scale-110 transition-all duration-500">
-              <span className="text-2xl font-display font-bold text-white text-sharp leading-none">W</span>
-            </div>
-            {!isScrolled && (
-              <span className="text-2xl font-display font-bold tracking-tighter text-indigo-900/60 text-sharp">WorkTime</span>
-            )}
+            <img src="/logo.png" alt="WorkTime Logo" className="h-10 w-auto object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.2)] group-hover:scale-105 transition-transform duration-500" />
           </Link>
 
           {/* Desktop Nav */}
@@ -158,10 +153,7 @@ export function Navbar() {
             <div className="space-y-12 text-indigo-950">
               <div className="flex items-center justify-between">
                 <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-primary flex items-center justify-center">
-                    <span className="text-2xl font-display font-medium text-white">W</span>
-                  </div>
-                  <span className="text-2xl font-display font-medium tracking-tighter">WorkTime</span>
+                  <img src="/logo.png" alt="WorkTime Logo" className="h-10 w-auto object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]" />
                 </Link>
                 <button onClick={() => setIsMobileMenuOpen(false)} className="w-10 h-10 rounded-full liquid-glass border-white/60 flex items-center justify-center">
                   <X className="w-5 h-5" />
@@ -179,9 +171,9 @@ export function Navbar() {
                     <Link 
                       to={link.href}
                       onClick={() => setIsMobileMenuOpen(false)}
-                      className="text-xl font-display font-medium opacity-40 hover:opacity-100 hover:text-primary flex items-center gap-6 group transition-all"
+                      className="text-lg font-display font-medium opacity-60 hover:opacity-100 hover:text-primary flex items-center gap-4 group transition-all"
                     >
-                      <span className="text-xs font-mono text-primary/40 group-hover:text-primary transition-colors">0{i + 1}</span>
+                      <span className="text-[10px] font-mono text-primary/40 group-hover:text-primary transition-colors">0{i + 1}</span>
                       {link.name}
                     </Link>
                   </motion.div>
@@ -206,14 +198,14 @@ export function Navbar() {
                   <Link 
                     to="/login"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="h-11 flex items-center justify-center text-xs font-bold uppercase tracking-widest border border-indigo-900/10 rounded-xl text-indigo-900/60 hover:bg-white/40 transition-colors"
+                    className="h-10 flex items-center justify-center text-[10px] font-bold uppercase tracking-widest border border-indigo-900/10 rounded-xl text-indigo-900/60 hover:bg-white/40 transition-colors"
                   >
                     {t("login")}
                   </Link>
                   <Link 
                     to="/signup"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="h-11 flex items-center justify-center text-xs font-bold uppercase tracking-widest bg-primary text-white rounded-xl hover:bg-primary/90 transition-all shadow-lg"
+                    className="h-10 flex items-center justify-center text-[10px] font-bold uppercase tracking-widest bg-primary text-white rounded-xl hover:bg-primary/90 transition-all shadow-lg"
                   >
                     {t("signup")}
                   </Link>
@@ -223,7 +215,7 @@ export function Navbar() {
                   {user?.email && ADMIN_USERS[user.email.toLowerCase()] && (
                     <Button
                       onClick={() => { navigate('/admin'); setIsMobileMenuOpen(false); }}
-                      className="h-11 bg-primary/10 text-primary hover:bg-primary/20 gap-2 text-xs rounded-xl font-bold"
+                      className="h-10 bg-primary/10 text-primary hover:bg-primary/20 gap-2 text-[10px] rounded-xl font-bold"
                     >
                       <Shield className="w-3.5 h-3.5" /> {ADMIN_USERS[user.email.toLowerCase()]} Panel
                     </Button>
@@ -232,13 +224,13 @@ export function Navbar() {
                     <Button
                       variant="ghost"
                       onClick={() => { navigate('/profile'); setIsMobileMenuOpen(false); }}
-                      className="h-11 liquid-glass border-white/60 bg-white/40 text-indigo-950 gap-2 text-xs rounded-xl"
+                      className="h-10 liquid-glass border-white/60 bg-white/40 text-indigo-950 gap-2 text-[10px] rounded-xl"
                     >
                       <User className="w-3.5 h-3.5" /> {t("profile")}
                     </Button>
                     <Button
                       onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }}
-                      className="h-11 bg-red-500/10 text-red-500 hover:bg-red-500/20 gap-2 text-xs rounded-xl"
+                      className="h-10 bg-red-500/10 text-red-500 hover:bg-red-500/20 gap-2 text-[10px] rounded-xl"
                     >
                       <LogOut className="w-3.5 h-3.5" /> {t("logout")}
                     </Button>
