@@ -11,10 +11,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-20">
           <div className="space-y-8">
             <Link to="/" className="flex items-center gap-4 group">
-              <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center shadow-lg transition-transform duration-500">
-                <span className="text-2xl font-display font-black text-white text-sharp leading-none">W</span>
-              </div>
-              <span className="text-2xl font-display font-black tracking-tighter text-indigo-900/60 text-sharp">WorkTime</span>
+              <img src="/WorkTime_logo_sayt2.png" alt="WorkTime Logo" className="h-12 w-auto group-hover:opacity-80 transition-opacity" />
             </Link>
             <p className="text-indigo-900/60 leading-relaxed text-[15px] text-sharp">
               {t("footer_desc")}

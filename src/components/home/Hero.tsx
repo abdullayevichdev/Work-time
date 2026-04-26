@@ -11,7 +11,7 @@ export function Hero() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [textIndex, setTextIndex] = useState(0);
-  const words = [t("freelancer_role"), t("hire_role")];
+  const words = [t("hero_word_1", "Innovation."), t("hero_word_2", "Excellence."), t("hero_word_3", "Brilliance.")];
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -85,55 +85,40 @@ export function Hero() {
         >
           <motion.div 
             variants={itemVariants} 
-            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full liquid-glass border-white/20 text-primary text-[10px] md:text-xs font-black tracking-[0.3em] uppercase mb-12 md:mb-16 relative group cursor-default"
+            className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white/20 border border-white/40 shadow-sm backdrop-blur-md text-[10px] md:text-xs font-bold tracking-widest uppercase mb-8 md:mb-10 relative group cursor-default overflow-hidden"
           >
-            <div className="specular-glow opacity-50" />
-            <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-            <span className="text-sharp brightness-150">{t('tagline')}</span>
+            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-primary/10 via-transparent to-cyan-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <Sparkles className="w-3.5 h-3.5 text-indigo-500 animate-pulse" />
+            <span className="text-indigo-950/80">{t('new_tagline', 'THE NEXT ERA OF WORK')}</span>
             
-            {/* Liquid Shine Effect */}
             <motion.div 
               animate={{ x: ['-100%', '200%'] }}
               transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", repeatDelay: 4 }}
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12 pointer-events-none" 
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-12 pointer-events-none" 
             />
           </motion.div>
           
           <motion.h1 
             variants={itemVariants}
-            className="text-4xl sm:text-6xl md:text-8xl lg:text-[min(11.5rem,15vw)] font-display font-bold tracking-tighter mb-8 md:mb-12 leading-[1.1] md:leading-[0.85] text-indigo-950 flex flex-col items-center select-none perspective-1000"
+            className="text-5xl sm:text-7xl md:text-[7rem] lg:text-[8rem] font-display font-black tracking-tighter mb-8 md:mb-12 leading-[1.1] text-indigo-950 flex flex-col items-center justify-center select-none perspective-1000"
           >
-            <motion.span 
-              className="inline-block relative z-30 drop-shadow-[0_15px_30px_rgba(139,92,246,0.1)] will-change-transform text-indigo-900/40"
-            >
-              {t("hero_title_1")}
-            </motion.span>
-            <div className="relative h-[1.3em] w-full flex items-center justify-center">
+            <span className="bg-clip-text text-transparent bg-gradient-to-br from-indigo-950 via-indigo-900 to-indigo-800 drop-shadow-sm pb-2">
+              {t('hero_title_new', 'Discover')}
+            </span>
+            <div className="relative h-[1.2em] w-full flex items-center justify-center mt-2 md:mt-4">
               <AnimatePresence mode="wait">
                 <motion.div 
                   key={textIndex}
-                  initial={{ y: 20, opacity: 0, filter: 'blur(10px)' }}
-                  animate={{ y: 0, opacity: 1, filter: 'blur(0px)' }}
-                  exit={{ y: -20, opacity: 0, filter: 'blur(10px)' }}
-                  transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-                  className="absolute inset-0 z-10 mt-2 md:mt-4 group cursor-default select-none -skew-x-6 flex items-center justify-center translate-z-0"
+                  initial={{ y: 40, opacity: 0, rotateX: -90 }}
+                  animate={{ y: 0, opacity: 1, rotateX: 0 }}
+                  exit={{ y: -40, opacity: 0, rotateX: 90 }}
+                  transition={{ duration: 0.8, type: "spring", bounce: 0.4 }}
+                  className="absolute inset-0 flex items-center justify-center origin-center"
                 >
-                  {/* Liquid Volumetric Highlight */}
-                  <span className="absolute inset-0 blur-3xl opacity-30 bg-gradient-to-r from-cyan-300 via-primary/20 to-indigo-400/20 pointer-events-none transition-all duration-[2s] group-hover:opacity-50 group-hover:scale-125 whitespace-nowrap">
-                    {words[textIndex]}.
+                  <span className="absolute inset-0 blur-3xl opacity-40 bg-gradient-to-r from-primary via-purple-500 to-cyan-500 pointer-events-none transition-all duration-[2s] group-hover:opacity-60 group-hover:scale-110 whitespace-nowrap"></span>
+                  <span className="relative bg-clip-text text-transparent bg-gradient-to-r from-primary via-indigo-500 to-cyan-500 pb-2">
+                    {words[textIndex]}
                   </span>
-                  
-                  <span className="relative inline-block text-liquid text-sharp pb-2 whitespace-nowrap text-[0.8em] md:text-[1em]">
-                    {words[textIndex]}.
-                  </span>
-
-                  {/* Decorative holographic line */}
-                  <motion.div 
-                    initial={{ scaleX: 0, opacity: 0 }}
-                    animate={{ scaleX: 1, opacity: 1 }}
-                    transition={{ delay: 0.4, duration: 1, ease: "circOut" }}
-                    className="absolute -bottom-1 md:-bottom-2 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent"
-                  />
                 </motion.div>
               </AnimatePresence>
             </div>
@@ -157,15 +142,16 @@ export function Hero() {
 
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4 md:gap-6 mt-12 md:mt-16">
                 <div className="relative group w-full sm:w-auto">
-                  <div className="absolute -inset-1 bg-gradient-to-r from-primary to-cyan-500 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
+                  <div className="absolute -inset-1 bg-gradient-to-r from-primary via-indigo-500 to-cyan-500 rounded-full blur-md opacity-40 group-hover:opacity-70 transition duration-500"></div>
                   <Button
                     size="lg"
-                    className="relative w-full sm:w-auto h-11 md:h-16 px-8 md:px-14 text-sm md:text-xl bg-primary hover:bg-primary/90 text-white rounded-2xl shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 text-sharp font-black uppercase tracking-widest"
+                    className="relative w-full sm:w-auto h-12 md:h-16 px-8 md:px-12 text-sm md:text-lg bg-gradient-to-r from-indigo-600 via-primary to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white rounded-full shadow-[0_0_40px_rgba(139,92,246,0.3)] border border-white/20 transition-all duration-300 hover:scale-105 active:scale-95 font-bold uppercase tracking-[0.15em] overflow-hidden"
                     nativeButton={false}
                     render={
-                      <Link to="/signup" className="flex items-center gap-3">
-                        {t("get_started")}
-                        <ArrowRight className="w-5 h-5 md:w-6 md:h-6 group-hover:translate-x-1 transition-transform" />
+                      <Link to="/signup" className="flex items-center justify-center gap-3 w-full h-full">
+                        <span className="relative z-10">{t("get_started")}</span>
+                        <ArrowRight className="w-4 h-4 md:w-5 md:h-5 group-hover:translate-x-1 transition-transform relative z-10" />
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] skew-x-12" />
                       </Link>
                     }
                   />
@@ -174,9 +160,9 @@ export function Hero() {
                 <Button
                   size="lg"
                   variant="outline"
-                  className="w-full sm:w-auto h-11 md:h-16 px-8 md:px-14 text-sm md:text-xl liquid-glass border-white/10 hover:bg-white/5 rounded-2xl transition-all duration-300 hover:border-white/20 text-sharp uppercase tracking-widest flex items-center justify-center"
+                  className="w-full sm:w-auto h-12 md:h-16 px-8 md:px-12 text-sm md:text-lg bg-white/30 backdrop-blur-xl border border-white/60 hover:bg-white/50 text-indigo-950 rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.05)] transition-all duration-300 hover:scale-105 active:scale-95 font-bold uppercase tracking-[0.15em] flex items-center justify-center"
                   nativeButton={false}
-                  render={<Link to="/jobs">{t("explore_jobs")}</Link>}
+                  render={<Link to="/jobs" className="w-full h-full flex items-center justify-center">{t("explore_jobs")}</Link>}
                 />
               </div>
 

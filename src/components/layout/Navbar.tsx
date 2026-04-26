@@ -74,6 +74,18 @@ export function Navbar() {
     }
   };
 
+  const markAllAsRead = async () => {
+    try {
+      const unreadNotifs = notifications.filter(n => !n.read);
+      if (unreadNotifs.length === 0) return;
+      await Promise.all(
+        unreadNotifs.map(n => updateDoc(doc(db, 'notifications', n.id), { read: true }))
+      );
+    } catch (e) {
+      console.error("Error marking all as read:", e);
+    }
+  };
+
   const deleteNotification = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
@@ -104,7 +116,7 @@ export function Navbar() {
       <div className={`container mx-auto px-4 md:px-6 transition-all duration-700 ${isScrolled ? 'max-w-[95%] md:max-w-4xl' : 'max-w-7xl'}`}>
         <div className={`flex items-center justify-between transition-all duration-700 ${isScrolled ? 'glass-dark rounded-2xl md:rounded-full px-6 md:px-8 py-3' : 'bg-transparent'}`}>
           <Link to="/" className="flex items-center gap-3 group">
-            <span className="text-2xl font-display font-bold tracking-tighter text-indigo-950 group-hover:text-primary transition-colors text-sharp">WorkTime</span>
+            <img src="/WorkTime_logo_sayt2.png" alt="WorkTime Logo" className="h-10 w-auto group-hover:opacity-80 transition-opacity" />
           </Link>
 
           {/* Desktop Nav */}
@@ -129,11 +141,11 @@ export function Navbar() {
 
             {user ? (
               <div className="flex items-center gap-4">
-                <DropdownMenu>
+                <DropdownMenu onOpenChange={(open) => { if (open) markAllAsRead(); }}>
                   <DropdownMenuTrigger className="w-10 h-10 rounded-full liquid-glass border-white/60 flex items-center justify-center hover:bg-white/40 transition-colors shadow-sm group relative">
                     <Bell className="w-5 h-5 text-indigo-900/40 group-hover:text-primary transition-colors" />
                     {unreadCount > 0 && (
-                      <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-bounce shadow-lg shadow-primary/20">
+                      <span className="absolute top-0 right-0 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center shadow-md shadow-red-500/40 ring-2 ring-white z-10">
                         {unreadCount}
                       </span>
                     )}
@@ -266,7 +278,7 @@ export function Navbar() {
             <div className="space-y-12 text-indigo-950">
               <div className="flex items-center justify-between">
                 <Link to="/" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-3">
-                  <span className="text-2xl font-display font-bold tracking-tighter text-indigo-950">WorkTime</span>
+                  <img src="/WorkTime_logo_sayt2.png" alt="WorkTime Logo" className="h-10 w-auto" />
                 </Link>
                 <button onClick={() => setIsMobileMenuOpen(false)} className="w-10 h-10 rounded-full liquid-glass border-white/60 flex items-center justify-center">
                   <X className="w-5 h-5" />
