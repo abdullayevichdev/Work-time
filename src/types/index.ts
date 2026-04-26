@@ -4,7 +4,8 @@ export interface UserProfile {
   id: string;
   email: string;
   full_name: string;
-  avatar_url?: string;
+  photo_url?: string;
+  phone?: string;
   role: UserRole;
   bio?: string;
   skills?: string[];

@@ -16,11 +16,17 @@ import { PostJobModal } from '@/components/jobs/PostJobModal';
 import { MarketPulse } from '@/components/home/MarketPulse';
 import { handleFirestoreError, OperationType } from '@/lib/firestore-errors';
 import { ApplicationsList } from '@/components/jobs/ApplicationsList';
-import { PremiumModal } from '@/components/premium/PremiumModal';
 import { AdminDashboard } from '@/components/admin/AdminDashboard';
+
+import { WorkRequestsList } from '@/components/dashboard/WorkRequestsList';
+
+import { useNavigate } from 'react-router-dom';
+import { ADMIN_USERS } from '@/constants';
+import { calculateProfileCompletion } from '@/lib/profile';
 
 export function DashboardPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
@@ -28,11 +34,12 @@ export function DashboardPage() {
     activeJobs: 0,
     money: 0,
     notifications: 0,
-    apps: 0
+    apps: 0,
+    jobSeekersCount: 0,
+    employersCount: 0,
+    activeRequestsCount: 0
   });
-  const [activities, setActivities] = useState<any[]>([]);
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
-  const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
@@ -58,54 +65,69 @@ export function DashboardPage() {
         setLoading(false);
       });
 
-      return () => unsubProfile();
+      // Fetch user counts
+      const usersRef = collection(db, 'users');
+      const unsubUsers = onSnapshot(usersRef, (snap) => {
+        const seekers = snap.docs.filter(d => d.data().role === 'freelancer' || d.data().role === 'job_seeker').length;
+        const employers = snap.docs.filter(d => d.data().role === 'client' || d.data().role === 'employer').length;
+        setStatsData(prev => ({
+          ...prev,
+          jobSeekersCount: seekers,
+          employersCount: employers
+        }));
+      });
+
+      // Fetch active requests count for the current user
+      const reqRef = collection(db, 'work_requests');
+      const isHireRole = profile?.role === 'client' || profile?.role === 'employer';
+      const field = isHireRole ? 'senderId' : 'receiverId';
+      const qReq = query(reqRef, where(field, '==', currentUser.uid));
+      const unsubReqs = onSnapshot(qReq, (snap) => {
+        setStatsData(prev => ({
+          ...prev,
+          activeRequestsCount: snap.size
+        }));
+      });
+
+      return () => {
+        unsubProfile();
+        unsubUsers();
+        unsubReqs();
+      };
     });
 
     return () => unsubscribeAuth();
-  }, []);
+  }, [profile?.role]);
 
-  // Separate effect for role-based listeners to be more stable
-  useEffect(() => {
-    if (!user || !profile?.role) return;
+  const calculateCompletion = () => {
+    if (!profile) return 0;
+    let score = 0;
+    if (profile.full_name) score += 15;
+    if (profile.title && profile.title !== t('prof_creator')) score += 10;
+    if (profile.bio) score += 15;
+    if (profile.photo_url || user?.photoURL) score += 20;
+    if (profile.skills && profile.skills.length > 0) score += 15;
+    if (profile.location && profile.location !== t('uzbekistan')) score += 10;
+    if (profile.experience && profile.experience.length > 0) score += 10;
+    if (profile.phone) score += 5;
+    return score;
+  };
 
-    const roleQueryField = profile.role === 'client' ? 'client_id' : 'freelancer_id';
-    
-    const appsQuery = query(
-      collection(db, 'proposals'),
-      where(roleQueryField, '==', user.uid),
-      orderBy('created_at', 'desc'),
-      limit(10)
-    );
+  const completionPercent = calculateProfileCompletion(profile);
+  const strokeDashoffset = 364 * (1 - completionPercent / 100);
 
-    const unsubActivity = onSnapshot(appsQuery, (snap) => {
-      const apps = snap.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        type: 'application'
-      }));
-      setActivities(apps);
-      
-      const accepted = apps.filter((a: any) => a.status === 'accepted').length;
-      setStatsData(prev => ({
-        ...prev,
-        activeJobs: accepted,
-        apps: snap.size
-      }));
-    });
+  const isHireRole = profile?.role === 'client' || profile?.role === 'employer';
 
-    return () => unsubActivity();
-  }, [user?.uid, profile?.role]);
-
-  const stats = profile?.role === 'client' ? [
-    { label: t('posted_jobs'), value: statsData.apps.toString(), icon: Briefcase, color: 'text-blue-400', bg: 'bg-blue-400/10' },
-    { label: t('total_spent'), value: `$${(statsData.money || 8500).toLocaleString()}`, icon: DollarSign, color: 'text-green-400', bg: 'bg-green-400/10' },
-    { label: t('applications'), value: statsData.apps.toString(), icon: Users, color: 'text-purple-400', bg: 'bg-purple-400/10' },
-    { label: t('active_projects'), value: statsData.activeJobs.toString(), icon: TrendingUp, color: 'text-orange-400', bg: 'bg-orange-400/10' },
+  const stats = isHireRole ? [
+    { label: t('job_seekers'), value: statsData.jobSeekersCount.toString(), icon: Users, color: 'text-blue-400', bg: 'bg-blue-400/10' },
+    { label: t('total_spent'), value: `$${(statsData.money || 0).toLocaleString()}`, icon: DollarSign, color: 'text-green-400', bg: 'bg-green-400/10' },
+    { label: t('active_requests'), value: statsData.activeRequestsCount.toString(), icon: Briefcase, color: 'text-purple-400', bg: 'bg-purple-400/10' },
+    { label: t('active_projects'), value: '0', icon: TrendingUp, color: 'text-orange-400', bg: 'bg-orange-400/10' },
   ] : [
-    { label: t('active_jobs'), value: (statsData.activeJobs || 12).toString(), icon: Briefcase, color: 'text-blue-400', bg: 'bg-blue-400/10' },
-    { label: t('total_earnings'), value: `$${(statsData.money || 14250).toLocaleString()}`, icon: DollarSign, color: 'text-green-400', bg: 'bg-green-400/10' },
-    { label: t('messages_title'), value: (statsData.notifications || 8).toString(), icon: MessageSquare, color: 'text-purple-400', bg: 'bg-purple-400/10' },
-    { label: t('profile_views'), value: (profile?.views || 245).toString(), icon: TrendingUp, color: 'text-orange-400', bg: 'bg-orange-400/10' },
+    { label: t('employers'), value: statsData.employersCount.toString(), icon: Users, color: 'text-blue-400', bg: 'bg-blue-400/10' },
+    { label: t('total_earnings'), value: `$${(statsData.money || 0).toLocaleString()}`, icon: DollarSign, color: 'text-green-400', bg: 'bg-green-400/10' },
+    { label: t('messages_title'), value: (statsData.notifications || 0).toString(), icon: MessageSquare, color: 'text-purple-400', bg: 'bg-purple-400/10' },
+    { label: t('profile_views'), value: (profile?.views || 0).toString(), icon: TrendingUp, color: 'text-orange-400', bg: 'bg-orange-400/10' },
   ];
 
   if (loading) return (
@@ -119,15 +141,9 @@ export function DashboardPage() {
       <PostJobModal 
         isOpen={isPostModalOpen} 
         onClose={() => setIsPostModalOpen(false)} 
-        onSuccess={() => {
-          // Refresh stats if needed
-        }}
+        onSuccess={() => {}}
       />
 
-      <PremiumModal
-        isOpen={isPremiumModalOpen}
-        onClose={() => setIsPremiumModalOpen(false)}
-      />
       
       <div className="flex flex-col lg:flex-row items-center lg:items-end justify-between gap-8 mb-12 bg-white/5 p-8 rounded-[2.5rem] border border-white/5 relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
@@ -135,7 +151,7 @@ export function DashboardPage() {
           <div className="relative group">
             <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl group-hover:bg-primary/40 transition-all duration-500" />
             <Avatar className="w-24 h-24 border-2 border-white/60 p-1 bg-white relative z-10 shadow-lg">
-              <AvatarImage src={user?.photoURL || ''} />
+              <AvatarImage src={profile?.photo_url || user?.photoURL || undefined} />
               <AvatarFallback className="bg-primary/10 text-primary text-3xl font-display font-bold">
                 {profile?.full_name?.[0] || user?.email?.[0] || 'U'}
               </AvatarFallback>
@@ -148,8 +164,10 @@ export function DashboardPage() {
                 {t('welcome_back')} <span className="text-primary font-bold">{profile?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'User'}</span>!
               </h1>
               <div className="flex gap-2">
-                {profile?.is_premium && (
-                  <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-black border-none font-black text-[10px] tracking-widest px-3">PREMIUM</Badge>
+                {(user?.email && ADMIN_USERS[user.email.toLowerCase()]) ? (
+                  <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-black border-none font-black text-[10px] tracking-widest px-3">OWNER</Badge>
+                ) : (profile?.is_premium) && (
+                  <Badge className="bg-gradient-to-r from-blue-400 to-indigo-500 text-white border-none font-black text-[10px] tracking-widest px-3 uppercase">PREMIUM</Badge>
                 )}
                 {profile?.is_admin && (
                   <Badge className="bg-red-500 text-white border-none font-black text-[10px] tracking-widest px-3">ADMIN</Badge>
@@ -157,7 +175,9 @@ export function DashboardPage() {
               </div>
             </div>
             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 text-indigo-950/40 text-sm font-medium">
-              <Badge variant="outline" className="border-indigo-900/10 text-indigo-900/60 bg-white/40 backdrop-blur-md px-4 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase">{profile?.role === 'client' ? t('hire_role') : t('freelancer_role')}</Badge>
+              <Badge variant="outline" className="border-indigo-900/10 text-indigo-900/60 bg-white/40 backdrop-blur-md px-4 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase truncate max-w-[150px]">
+                {isHireRole ? t('hire_role') : t('freelancer_role')}
+              </Badge>
               <span className="flex items-center gap-2">
                 <Clock className="w-4 h-4 text-primary" /> {t('last_active')} {t('just_now')}
               </span>
@@ -165,22 +185,20 @@ export function DashboardPage() {
           </div>
         </div>
         
-        <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
-          {!profile?.is_premium && !profile?.is_admin && (
+          <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
+            {isHireRole ? (
+              <Button 
+                onClick={() => navigate('/talents')}
+                className="h-11 md:h-14 px-6 md:px-8 bg-primary hover:bg-primary/80 shadow-[0_0_20px_rgba(139,92,246,0.3)] rounded-2xl font-bold flex-1 sm:flex-none"
+              >
+                {t('explore_talents')}
+              </Button>
+            ) : (
             <Button 
-              onClick={() => setIsPremiumModalOpen(true)}
-              variant="outline"
-              className="h-11 md:h-14 px-6 md:px-8 border-yellow-500/30 text-yellow-500 hover:bg-yellow-500/10 rounded-2xl font-bold flex-1 sm:flex-none"
+              onClick={() => navigate('/jobs')}
+              className="h-11 md:h-14 px-6 md:px-8 bg-gradient-to-r from-primary to-indigo-600 hover:opacity-90 shadow-[0_0_20px_rgba(139,92,246,0.3)] rounded-2xl font-bold flex-1 sm:flex-none border-none text-white transition-all"
             >
-              {t('upgrade_premium')}
-            </Button>
-          )}
-          {profile?.role === 'client' && (
-            <Button 
-              onClick={() => setIsPostModalOpen(true)}
-              className="h-11 md:h-14 px-6 md:px-8 bg-primary hover:bg-primary/80 shadow-[0_0_20px_rgba(139,92,246,0.3)] rounded-2xl font-bold flex-1 sm:flex-none"
-            >
-              {t('post_new_job')}
+              {t('explore_jobs')}
             </Button>
           )}
         </div>
@@ -219,80 +237,21 @@ export function DashboardPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Main Content Area */}
             <div className="lg:col-span-2 space-y-8">
-              {profile?.role === 'client' ? (
-                <section>
-                  <h2 className="text-2xl font-display font-bold mb-6 flex items-center gap-2">
-                    <Users className="w-6 h-6 text-primary" />
-                    {t('freelancer_apps')}
-                  </h2>
-                  <ApplicationsList />
-                </section>
-              ) : (
-                <Card className="glass border-white/10">
-                  <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle className="text-xl flex items-center gap-2">
-                      <Clock className="w-5 h-5 text-primary" />
-                      {t('recent_activity')}
-                    </CardTitle>
-                    <Button variant="ghost" size="sm" className="text-primary hover:bg-primary/10">{t('view_all')}</Button>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {activities.length > 0 ? activities.map((activity) => (
-                      <div key={activity.id} className="flex items-center justify-between p-4 rounded-2xl bg-indigo-900/5 border border-indigo-900/5 hover:border-primary/20 transition-all group">
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-lg bg-white/40 flex items-center justify-center border border-indigo-900/5 shadow-sm">
-                            {activity.type === 'application' ? <Briefcase className="w-5 h-5 text-blue-500" /> : 
-                             activity.type === 'message' ? <MessageSquare className="w-5 h-5 text-purple-500" /> : 
-                             <Star className="w-5 h-5 text-yellow-500" />}
-                          </div>
-                          <div>
-                            <h4 className="font-bold text-indigo-950 group-hover:text-primary transition-colors text-sharp">
-                              {profile?.role === 'client' ? `Application for ${activity.job_title}` : `Applied to ${activity.job_title}`}
-                            </h4>
-                            <p className="text-sm text-indigo-900/40 font-medium text-sharp">{new Date(activity.created_at).toLocaleDateString()}</p>
-                          </div>
-                        </div>
-                        <Badge variant="outline" className={`capitalize border-indigo-900/10 font-bold ${
-                          activity.status === 'accepted' ? 'text-green-600 bg-green-500/10' :
-                          activity.status === 'rejected' ? 'text-red-600 bg-red-500/10' :
-                          'text-indigo-900/40'
-                        }`}>
-                          {activity.status}
-                        </Badge>
-                      </div>
-                    )) : (
-                      <div className="py-12 text-center">
-                        <Clock className="w-12 h-12 text-indigo-900/10 mx-auto mb-4" />
-                        <h4 className="text-lg font-bold text-indigo-950/60 mb-1 text-sharp">{t('no_activity')}</h4>
-                        <p className="text-sm text-indigo-950/30 text-sharp font-medium">{t('no_activity_desc')}</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
+              <section>
+                <h2 className="text-2xl font-display font-bold mb-6 flex items-center gap-2">
+                  <Briefcase className="w-6 h-6 text-primary" />
+                  {t('work_requests')}
+                </h2>
+                <WorkRequestsList role={profile?.role || 'freelancer'} />
+              </section>
             </div>
 
             {/* Quick Actions / Profile Completion */}
             <div className="space-y-6">
-              {profile?.is_premium && (
-                <section className="animate-in fade-in slide-in-from-right-4 duration-700">
-                  <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-950/40 mb-4 px-2">Live Marketplace Data</h3>
-                  <MarketPulse isPremium={true} />
-                </section>
-              )}
-
-              {profile?.premium_status === 'pending' && (
-                <Card className="glass border-yellow-500/30 bg-yellow-500/5 relative overflow-hidden group">
-                  <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/10 to-transparent animate-pulse" />
-                  <CardContent className="pt-6 relative z-10 flex flex-col items-center text-center">
-                    <Loader2 className="w-10 h-10 text-yellow-500 animate-spin mb-4" />
-                    <h3 className="text-lg font-bold text-yellow-700 mb-2">{t('verifying_payment')}</h3>
-                    <p className="text-xs text-yellow-700/60 font-medium">
-                      Tizim chekning haqiqiyligini tekshirmoqda. Bu bir necha daqiqa vaqt olishi mumkin.
-                    </p>
-                  </CardContent>
-                </Card>
-              )}
+              <section className="animate-in fade-in slide-in-from-right-4 duration-700">
+                <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-indigo-950/40 mb-4 px-2">{t("live_marketplace_data")}</h3>
+                <MarketPulse isPremium={true} />
+              </section>
 
               <Card className="glass border-white/10 overflow-hidden relative">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 blur-3xl -mr-16 -mt-16" />
@@ -319,12 +278,12 @@ export function DashboardPage() {
                         strokeWidth="8"
                         fill="transparent"
                         strokeDasharray={364}
-                        strokeDashoffset={364 * (1 - 0.85)}
-                        className="text-primary"
+                        strokeDashoffset={strokeDashoffset}
+                        className="text-primary transition-all duration-1000 ease-out"
                       />
                     </svg>
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-2xl font-bold text-indigo-950 text-sharp">85%</span>
+                      <span className="text-2xl font-bold text-indigo-950 text-sharp">{completionPercent}%</span>
                     </div>
                   </div>
                   <p className="text-sm text-indigo-900/40 text-center mb-6 font-bold text-sharp uppercase tracking-tight">{t('portfolio_cta')}</p>

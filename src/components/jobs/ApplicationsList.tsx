@@ -73,7 +73,7 @@ export function ApplicationsList() {
           <CardContent className="p-6">
             <div className="flex flex-col md:flex-row gap-6">
               <Avatar className="w-16 h-16 border border-white/10">
-                <AvatarImage src={app.freelancer_avatar} />
+                <AvatarImage src={app.freelancer_avatar || undefined} />
                 <AvatarFallback>{app.freelancer_name[0]}</AvatarFallback>
               </Avatar>
               

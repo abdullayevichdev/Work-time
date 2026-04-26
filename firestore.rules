@@ -11,32 +11,18 @@ service cloud.firestore {
       return request.auth != null;
     }
     
-    function isVerified() {
-      return isSignedIn() && request.auth.token.email_verified == true;
-    }
-
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
     function isAdmin() {
       return isSignedIn() && (
         exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
-        request.auth.token.email.lower() in [
+        (request.auth.token != null && 'email' in request.auth.token && request.auth.token.email != null && request.auth.token.email.lower() in [
           'abdulxayavazxanov2012@gmail.com',
           'unknownprogrammerdev@gmail.com',
           'tuyginovsardor4@gmail.com'
-        ]
+        ])
       );
     }
 
-    // 3. VALIDATION HELPERS
-    function isValidUserProfile(data) {
-      return data.get('full_name', '') is string && 
-             data.get('email', '') is string;
-    }
-
-    // 4. COLLECTION RULES
+    // 3. COLLECTION RULES
     
     // Connection test document
     match /test/connection {
@@ -45,54 +31,52 @@ service cloud.firestore {
     
     // Users Collection
     match /users/{userId} {
-      // Anyone signed in can view profiles (needed for Talents page)
-      allow read: if isSignedIn();
-      allow create: if isOwner(userId) && isValidUserProfile(request.resource.data);
-      allow update: if (isOwner(userId) || isAdmin()) && isValidUserProfile(request.resource.data) &&
-                      request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-                        'full_name', 'bio', 'title', 'skills', 'hourly_rate', 
-                        'location', 'socials', 'photo_url', 'last_updated', 
-                        'is_new_user', 'role', 'is_premium', 'email', 'created_at',
-                        'premium_since', 'premium_status'
-                      ]);
+      // Profiles are publically viewable
+      allow read: if true;
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    // Work Requests Collection
+    match /work_requests/{requestId} {
+      allow read, write: if isSignedIn();
+    }
+
+    // Notifications Collection
+    match /notifications/{notifId} {
+      allow read: if isSignedIn() && (resource == null || resource.data.userId == request.auth.uid);
+      allow create: if isSignedIn();
+      allow update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
     }
 
     // Jobs Collection
     match /jobs/{jobId} {
-      allow read: if true; // Jobs are public
-      allow create: if isSignedIn() && isVerified();
-      allow update, delete: if isSignedIn() && resource.data.client_id == request.auth.uid;
+      allow read: if true;
+      allow create: if isSignedIn();
+      allow update, delete: if isSignedIn() && (resource.data.client_id == request.auth.uid || isAdmin());
     }
 
     // Proposals Collection
     match /proposals/{proposalId} {
-      allow list: if isSignedIn() && (resource.data.freelancer_id == request.auth.uid || 
-                    resource.data.client_id == request.auth.uid);
-      allow get: if isSignedIn() && (resource.data.freelancer_id == request.auth.uid || 
-                    resource.data.client_id == request.auth.uid);
-      allow create: if isSignedIn();
-      allow update: if isSignedIn() && (resource.data.freelancer_id == request.auth.uid || 
-                       resource.data.client_id == request.auth.uid);
-      allow delete: if isSignedIn() && resource.data.freelancer_id == request.auth.uid;
+      allow read, write: if isSignedIn();
     }
 
     // Messages Collection
     match /messages/{messageId} {
-      allow list: if isSignedIn() && request.auth.uid in resource.data.participants;
-      allow get: if isSignedIn() && request.auth.uid in resource.data.participants;
-      allow create: if isSignedIn() && request.auth.uid == request.resource.data.sender_id;
+      allow read: if isSignedIn() && (
+        isAdmin() || 
+        (resource != null && 'participants' in resource.data && request.auth.uid in resource.data.participants)
+      );
+      allow create: if isSignedIn();
     }
 
     // Premium Requests Collection (for Admin & Users)
     match /premium_requests/{requestId} {
       allow list: if isAdmin() || (isSignedIn() && resource.data.user_id == request.auth.uid);
       allow get: if isAdmin() || (isSignedIn() && resource.data.user_id == request.auth.uid);
-      allow create: if isSignedIn() && request.auth.uid == request.resource.data.user_id &&
-                      request.resource.data.status == 'pending';
-      allow update: if isAdmin() ||
-                      (isSignedIn() && request.auth.uid == resource.data.user_id && 
-                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']) &&
-                       request.resource.data.status == 'cancelled');
+      allow create: if isSignedIn() && request.auth.uid == request.resource.data.user_id;
+      allow update: if isAdmin() || (isSignedIn() && request.auth.uid == resource.data.user_id);
     }
 
     // Admins helper (if needed for the rules above)

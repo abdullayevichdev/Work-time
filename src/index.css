@@ -31,7 +31,7 @@
   }
 
   .liquid-glass, .liquid-card {
-    @apply relative overflow-hidden rounded-3xl md:rounded-[3rem] bg-white/20 border border-white/60;
+    @apply relative overflow-hidden rounded-[3rem] bg-white/20 border border-white/60;
     will-change: transform, opacity;
     transform: translateZ(0); 
     box-shadow: 

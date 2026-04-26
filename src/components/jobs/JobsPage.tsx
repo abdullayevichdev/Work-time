@@ -14,16 +14,17 @@ import { Link } from 'react-router-dom';
 import { Job } from '@/types';
 import { toast } from 'sonner';
 import { ApplyModal } from './ApplyModal';
-import { PremiumModal } from '@/components/premium/PremiumModal';
+
+import { useNavigate } from 'react-router-dom';
+import { ADMIN_USERS } from '@/constants';
+import { calculateProfileCompletion } from '@/lib/profile';
 
 export function JobsPage() {
   const { t } = useTranslation();
-  const [jobs, setJobs] = useState<Job[]>([]);
+  const navigate = useNavigate();
+  const [usersList, setUsersList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
-  const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
-  const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
 
@@ -41,52 +42,16 @@ export function JobsPage() {
     });
 
     setLoading(true);
-    const jobsRef = collection(db, 'jobs');
-    const q = query(jobsRef, orderBy('created_at', 'desc'));
+    // Fetch all users to show in the "Jobs/Opportunities" section
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, orderBy('created_at', 'desc'));
     
-    const unsubscribeJobs = onSnapshot(q, (snapshot) => {
-      if (snapshot.empty) {
-        console.warn('Firebase empty (falling back to mock data)');
-        const mockJobs: Job[] = [
-          {
-            id: '1',
-            title: 'Senior React Developer for Fintech App',
-            description: 'We are looking for an expert React developer to build a high-performance dashboard with real-time charts and glassmorphism UI.',
-            budget: 5000,
-            budget_type: 'fixed',
-            category: 'Development',
-            experience_level: 'expert',
-            skills_required: ['React', 'TypeScript', 'Tailwind CSS', 'Framer Motion'],
-            client_id: 'c1',
-            client_name: 'Nexus Labs',
-            status: 'open',
-            created_at: new Date().toISOString(),
-            is_featured: true
-          },
-          {
-            id: '2',
-            title: 'Futuristic UI/UX Designer',
-            description: 'Need a designer who specializes in Apple-style glassmorphism and liquid glass aesthetics for a new SaaS platform.',
-            budget: 3500,
-            budget_type: 'fixed',
-            category: 'Design',
-            experience_level: 'intermediate',
-            skills_required: ['Figma', 'UI/UX', 'Interaction Design'],
-            client_id: 'c2',
-            client_name: 'Glassy Inc',
-            status: 'open',
-            created_at: new Date().toISOString(),
-            is_featured: false
-          }
-        ];
-        setJobs(mockJobs);
-      } else {
-        const jobsData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Job[];
-        setJobs(jobsData);
-      }
+    const unsubscribeUsers = onSnapshot(q, (snapshot) => {
+      const usersData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setUsersList(usersData);
       setLoading(false);
     }, (error) => {
       console.error('Firebase snapshot error:', error);
@@ -96,41 +61,22 @@ export function JobsPage() {
 
     return () => {
       unsubscribeAuth();
-      unsubscribeJobs();
+      unsubscribeUsers();
       if (unsubProfile) unsubProfile();
     };
   }, []);
 
-  const handleApply = (job: Job) => {
-    if (!user) {
-      toast.error(t('login_to_apply'));
-      return;
-    }
-    setSelectedJob(job);
-    setIsApplyModalOpen(true);
-  };
-
-  const filteredJobs = jobs.filter(job => 
-    job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    job.description.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredUsers = usersList.filter(u => 
+    (u.full_name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+    (u.title?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+    (u.skills?.some((s: string) => s.toLowerCase().includes(searchQuery.toLowerCase())))
   );
 
   return (
     <div className="pt-24 md:pt-32 pb-20 container mx-auto px-4 md:px-6">
-      <ApplyModal 
-        isOpen={isApplyModalOpen} 
-        onClose={() => setIsApplyModalOpen(false)} 
-        job={selectedJob} 
-      />
-
-      <PremiumModal
-        isOpen={isPremiumModalOpen}
-        onClose={() => setIsPremiumModalOpen(false)}
-      />
-      
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-12">
         <div className="text-left w-full md:w-auto">
-          <h1 className="text-3xl md:text-4xl font-display font-bold mb-2 text-indigo-950 text-sharp">{t('browse_jobs')}</h1>
+          <h1 className="text-3xl md:text-4xl font-display font-bold mb-2 text-indigo-950 text-sharp">{t('explore_jobs')}</h1>
           <p className="text-indigo-900/40 text-sm md:text-base text-sharp">{t('jobs_find_desc')}</p>
         </div>
         
@@ -138,7 +84,7 @@ export function JobsPage() {
           <div className="relative flex-1 md:w-80">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
             <Input 
-              placeholder={t('search_jobs')} 
+              placeholder={t('search_talents_placeholder')} 
               className="pl-10 h-11 md:h-10 glass border-white/10 focus:border-primary w-full"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -152,7 +98,7 @@ export function JobsPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Sidebar Filters - Desktop */}
+          {/* Sidebar Filters - Desktop */}
         <div className="hidden lg:block space-y-8">
           <Card className="glass border-white/10">
             <CardHeader>
@@ -160,41 +106,21 @@ export function JobsPage() {
             </CardHeader>
             <CardContent className="space-y-2">
               {[
-                { label: t('cat_dev'), id: 'Development' },
-                { label: t('cat_design'), id: 'Design' },
-                { label: t('cat_marketing'), id: 'Marketing' },
-                { label: t('cat_writing'), id: 'Writing' },
-                { label: t('cat_video'), id: 'Video' }
+                { label: t('job_seekers'), id: 'job_seeker' },
+                { label: t('employers'), id: 'employer' }
               ].map(cat => (
                 <div key={cat.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-white/40 cursor-pointer transition-colors group">
                   <span className="text-indigo-900/60 group-hover:text-primary font-medium text-sharp">{cat.label}</span>
-                  <Badge variant="outline" className="border-indigo-900/10 text-indigo-900/40">12</Badge>
+                  <Badge variant="outline" className="border-indigo-900/10 text-indigo-900/40">
+                    {usersList.filter(u => u.role === cat.id).length}
+                  </Badge>
                 </div>
               ))}
             </CardContent>
           </Card>
-
-          {!profile?.is_premium && (
-            <Card className="glass border-white/10 bg-gradient-to-br from-primary/20 to-transparent relative overflow-hidden group">
-              <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-              <CardContent className="pt-6 relative z-10">
-                <div className="flex items-center gap-2 text-primary mb-4">
-                  <Star className="w-5 h-5 fill-current animate-pulse" />
-                  <span className="font-bold uppercase tracking-widest text-xs">{t('premium_benefits')}</span>
-                </div>
-                <p className="text-sm text-indigo-950/60 mb-6 font-medium leading-relaxed">{t('premium_desc')}</p>
-                <Button 
-                  onClick={() => setIsPremiumModalOpen(true)} 
-                  className="w-full bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 h-11 rounded-xl font-bold uppercase tracking-widest text-[11px] transition-all hover:scale-[1.02]"
-                >
-                  {t('upgrade')}
-                </Button>
-              </CardContent>
-            </Card>
-          )}
         </div>
 
-        {/* Jobs List */}
+        {/* Users List */}
         <div className="lg:col-span-2 space-y-6">
           {loading ? (
             Array(3).fill(0).map((_, i) => (
@@ -204,88 +130,103 @@ export function JobsPage() {
                   <div className="flex-1 space-y-3">
                     <Skeleton className="h-6 w-2/3 bg-white/5" />
                     <Skeleton className="h-4 w-full bg-white/5" />
-                    <Skeleton className="h-4 w-1/2 bg-white/5" />
                   </div>
                 </div>
               </Card>
             ))
-          ) : filteredJobs.length > 0 ? (
-            filteredJobs.map((job) => (
-              <motion.div
-                key={job.id}
-                initial={{ opacity: 0, y: 15 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                whileHover={typeof window !== 'undefined' && window.innerWidth > 1024 ? { scale: 1.01 } : {}}
-                className="group will-change-transform"
-              >
-                <Card className={`glass-card border-white/10 will-change-transform ${job.is_featured ? 'border-primary/30 bg-primary/5' : ''}`}>
-                  <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-                    <div className="flex gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center border border-white/10">
-                        <Briefcase className="w-6 h-6 text-primary" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-xl mb-1 text-indigo-950 group-hover:text-primary transition-colors text-sharp">{job.title}</CardTitle>
-                        <div className="flex items-center gap-4 text-sm text-indigo-900/40 font-medium text-sharp">
-                          <span className="flex items-center gap-1">
-                            <MapPin className="w-3 h-3" /> {t('remote')}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" /> {t('posted_recently')}
-                          </span>
+          ) : filteredUsers.length > 0 ? (
+            filteredUsers.map((u) => {
+              const completion = calculateProfileCompletion(profile);
+              const isComplete = completion >= 80;
+
+              return (
+                <motion.div
+                  key={u.id}
+                  initial={{ opacity: 0, y: 15 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  className="group will-change-transform"
+                >
+                  <Card className={`glass-card border-white/10 will-change-transform hover:border-primary/30 transition-all ${(u.email && ADMIN_USERS[u.email.toLowerCase()]) ? 'border-primary/30 bg-primary/5' : ''}`}>
+                    <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+                      <div className="flex gap-4">
+                        <div className="w-16 h-16 rounded-2xl overflow-hidden border border-white/10 group-hover:border-primary/50 transition-colors">
+                          <img 
+                            src={u.photo_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.id}`} 
+                            alt={u.full_name} 
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <CardTitle className="text-xl text-indigo-950 group-hover:text-primary transition-colors text-sharp truncate">
+                              {u.full_name || 'User'}
+                            </CardTitle>
+                            {u.email && ADMIN_USERS[u.email.toLowerCase()] ? (
+                              <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-black border-none font-black text-[8px] tracking-widest px-2 py-0">OWNER</Badge>
+                            ) : u.is_premium && (
+                              <Badge className="bg-gradient-to-r from-blue-400 to-indigo-500 text-white border-none font-black text-[8px] tracking-widest px-2 py-0 uppercase">PREMIUM</Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-4 text-xs text-indigo-900/40 font-bold uppercase tracking-widest text-sharp">
+                            <span className="flex items-center gap-1">
+                              <MapPin className="w-3 h-3 text-primary" /> {u.location || t('uzbekistan')}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Briefcase className="w-3 h-3 text-primary" /> {u.role === 'employer' ? t('employers') : t('job_seekers')}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    {job.is_featured && (
-                      <Badge className="bg-primary/20 text-primary border-primary/20">{t('featured')}</Badge>
-                    )}
-                  </CardHeader>
-                  <CardContent className="pt-4">
-                    <p className="text-indigo-950/60 line-clamp-2 mb-6 leading-relaxed text-sharp">
-                      {job.description}
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      <Badge variant="secondary" className="bg-white/40 border-indigo-900/10 text-indigo-900/60 text-sharp">{t(`cat_${job.category?.toLowerCase() || 'dev'}`)}</Badge>
-                      {profile?.is_premium && (
-                        <Badge className="bg-yellow-400/20 text-yellow-600 border-yellow-400/30 font-black text-[9px] tracking-widest px-2 animate-pulse">
-                          0% COMMISSION
-                        </Badge>
-                      )}
-                      {profile?.is_premium && (
-                        <Badge className="bg-primary/20 text-primary border-primary/30 font-black text-[9px] tracking-widest px-2 group-hover:scale-110 transition-transform">
-                          PREMIUM TALENT
-                        </Badge>
-                      )}
-                    </div>
-                  </CardContent>
-                  <CardFooter className="flex flex-col sm:flex-row items-center justify-between border-t border-indigo-900/5 pt-6 gap-4">
-                    <div className="flex items-center gap-1.5 order-2 sm:order-1">
-                      <span className="text-xl md:text-2xl font-bold text-indigo-950 text-sharp">${job.budget}</span>
-                      <span className="text-indigo-900/40 text-xs md:text-sm font-medium text-sharp">/ {job.budget_type === 'hourly' ? t('hr') : t('project')}</span>
-                    </div>
-                    <div className="flex gap-2 w-full sm:w-auto order-1 sm:order-2">
-                      <Button 
-                        variant="ghost" 
-                        className="glass border-white/10 hover:bg-white/5 flex-1 sm:flex-initial text-xs sm:text-sm h-9 md:h-10"
-                        nativeButton={false}
-                        render={<Link to={`/jobs/${job.id}`}>{t('view_details')}</Link>}
-                      />
-                      <Button 
-                        onClick={() => handleApply(job)}
-                        className="flex-1 sm:flex-initial bg-primary hover:bg-primary/80 text-white shadow-lg shadow-primary/20 text-xs sm:text-sm h-9 md:h-10"
-                      >
-                        {t('apply')}
-                      </Button>
-                    </div>
-                  </CardFooter>
-                </Card>
-              </motion.div>
-            ))
+                    </CardHeader>
+                    <CardContent className="pt-4">
+                      <h4 className="text-sm font-bold text-indigo-950 mb-2 truncate">{u.title}</h4>
+                      <p className="text-indigo-950/60 line-clamp-2 mb-6 leading-relaxed text-sharp text-sm">
+                        {u.bio || t('no_bio')}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {u.skills?.slice(0, 5).map((skill: string) => (
+                          <Badge key={skill} variant="secondary" className="bg-white/40 border-indigo-900/10 text-indigo-900/60 text-[10px] font-bold uppercase tracking-tighter">
+                            {skill}
+                          </Badge>
+                        ))}
+                      </div>
+                    </CardContent>
+                    <CardFooter className="flex items-center justify-between border-t border-indigo-900/5 pt-6">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xl md:text-2xl font-bold text-indigo-950 text-sharp">${u.hourly_rate || '45'}</span>
+                        <span className="text-indigo-900/40 text-xs md:text-sm font-medium text-sharp">/ {t('hr')}</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="ghost" 
+                          className="glass border-white/10 hover:bg-white/5 h-9 md:h-10 px-6 font-bold"
+                          onClick={() => {
+                            if (isComplete) {
+                              navigate(`/profile/${u.id}`);
+                            } else {
+                              toast.error(t('complete_profile_first'), {
+                                description: t('portfolio_cta'),
+                                action: {
+                                  label: t('complete_profile'),
+                                  onClick: () => navigate('/profile')
+                                }
+                              });
+                            }
+                          }}
+                        >
+                          {t('view_details')}
+                        </Button>
+                      </div>
+                    </CardFooter>
+                  </Card>
+                </motion.div>
+              );
+            })
           ) : (
             <div className="text-center py-20 glass rounded-3xl border-white/10">
               <Briefcase className="w-12 h-12 text-white/20 mx-auto mb-4" />
-              <h3 className="text-xl font-bold mb-2">{t('no_jobs_found')}</h3>
+              <h3 className="text-xl font-bold mb-2">{t('no_talents_found')}</h3>
               <p className="text-white/40">{t('adjust_search')}</p>
             </div>
           )}

@@ -83,7 +83,7 @@ export function TalentsPage() {
                 <CardContent className="p-8 flex flex-col h-full">
                   <div className="flex items-start justify-between mb-6">
                     <Avatar className="w-20 h-20 border-2 border-primary/20 p-1 bg-white/5">
-                      <AvatarImage src={talent.avatar_url || ''} />
+                      <AvatarImage src={talent.photo_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${talent.id}`} />
                       <AvatarFallback className="bg-primary/20 text-primary text-2xl font-bold">
                         {talent.full_name?.[0] || talent.email?.[0]}
                       </AvatarFallback>

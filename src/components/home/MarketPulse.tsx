@@ -65,16 +65,6 @@ export function MarketPulse({ isPremium = false }: MarketPulseProps) {
       </div>
       
       <div className="space-y-5 relative">
-        {!isPremium && (
-          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/10 backdrop-blur-md rounded-[1.5rem] border border-white/40 group">
-             <div className="w-14 h-14 rounded-2xl bg-primary/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <ShieldCheck className="w-7 h-7 text-primary" />
-             </div>
-             <p className="text-xs font-black uppercase tracking-[0.2em] text-indigo-950 mb-2">{t('premium_exclusive')}</p>
-             <p className="text-[10px] text-indigo-900/40 font-medium max-w-[180px] text-center">{t('premium_exclusive_desc')}</p>
-          </div>
-        )}
-
         {/* AI Match Algorithm / Recent Job */}
         <div className="flex items-center justify-between p-4 rounded-[1.5rem] bg-white/40 border border-white/60 hover:border-primary/30 transition-all group overflow-hidden relative">
           <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent -translate-x-full group-hover:translate-x-0 transition-transform duration-700" />
@@ -138,17 +128,13 @@ export function MarketPulse({ isPremium = false }: MarketPulseProps) {
         <div className="pt-6 flex justify-center">
           <motion.button 
             onClick={() => {
-              if (isPremium) {
                 navigate('/jobs');
-              }
             }}
-            animate={isPremium ? { scale: [1, 1.05, 1], rotateZ: [0, 1, -1, 0] } : {}}
+            animate={{ scale: [1, 1.05, 1], rotateZ: [0, 1, -1, 0] }}
             transition={{ duration: 3, repeat: Infinity }}
-            className={`px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] shadow-xl transition-all duration-500 outline-none ${
-              isPremium ? 'bg-primary text-white shadow-primary/30 cursor-pointer hover:brightness-110' : 'bg-indigo-950/20 text-indigo-950/40 border border-indigo-950/5 cursor-default'
-            }`}
+            className={`px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] shadow-xl transition-all duration-500 outline-none bg-primary text-white shadow-primary/30 cursor-pointer hover:brightness-110`}
           >
-            {isPremium ? t('opportunity_mapped') : t('signal_encrypted')}
+            {t('opportunity_mapped')}
           </motion.button>
         </div>
       </div>

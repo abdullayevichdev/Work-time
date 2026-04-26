@@ -7,7 +7,7 @@
       "properties": {
         "full_name": { "type": "string" },
         "email": { "type": "string", "format": "email" },
-        "avatar_url": { "type": "string" },
+        "photo_url": { "type": "string" },
         "role": { "type": "string", "enum": ["freelancer", "client", "admin"] },
         "bio": { "type": "string" },
         "skills": { "type": "array", "items": { "type": "string" } },

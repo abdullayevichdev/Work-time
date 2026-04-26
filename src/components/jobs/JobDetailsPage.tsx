@@ -129,7 +129,7 @@ export function JobDetailsPage() {
                 <h3 className="font-bold text-lg text-indigo-950 text-sharp">{t('about_client')}</h3>
                 <div className="flex items-center gap-4">
                   <Avatar className="w-12 h-12 border border-indigo-900/10">
-                    <AvatarImage src={client?.avatar_url} />
+                    <AvatarImage src={client?.photo_url || client?.avatar_url || undefined} />
                     <AvatarFallback className="bg-primary/10 text-primary">{client?.full_name?.[0] || 'C'}</AvatarFallback>
                   </Avatar>
                   <div>

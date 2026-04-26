@@ -31,7 +31,7 @@ export function AuthPage({ mode }: AuthPageProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [role, setRole] = useState<'freelancer' | 'client'>('freelancer');
+  const [role, setRole] = useState<'job_seeker' | 'employer'>('job_seeker');
 
   const handleSuccess = (destination: string) => {
     setIsExiting(true);
@@ -82,9 +82,9 @@ export function AuthPage({ mode }: AuthPageProps) {
       if (!userDoc?.exists()) {
         try {
           await setDoc(doc(db, 'users', user.uid), {
-            full_name: user.displayName || 'Google User',
+            full_name: user.displayName || 'User',
             email: user.email,
-            role: 'freelancer',
+            role: 'job_seeker',
             is_premium: false,
             created_at: new Date().toISOString(),
             photo_url: user.photoURL || '',
@@ -123,6 +123,15 @@ export function AuthPage({ mode }: AuthPageProps) {
         console.error(`Firebase error: Add "${currentDomain}" to your Firebase Console -> Authentication -> Settings -> Authorized domains.`);
       } else if (errorCode === 'auth/cancelled-popup-request') {
         // Just ignore if another popup was opened
+      } else if (errorCode === 'auth/network-request-failed') {
+        toast.error(t('network_error'), {
+          description: "Tarmoq xatosi yoki brauzer pop-upni blokladi. Iltimos, saytni yangi oynada ochib ko'ring (New Tab) yoki internetni tekshiring.",
+          duration: 10000,
+          action: {
+            label: "New Tab",
+            onClick: () => window.open(window.location.href, '_blank')
+          }
+        });
       } else {
         toast.error(t('google_error') + (error.message || errorCode));
       }
@@ -155,7 +164,7 @@ export function AuthPage({ mode }: AuthPageProps) {
         });
 
         toast.success(t('signup_success'));
-        handleSuccess('/dashboard');
+        handleSuccess('/profile');
       } else {
         await signInWithEmailAndPassword(auth, email, password);
         toast.success(t('login_success'));
@@ -278,19 +287,19 @@ export function AuthPage({ mode }: AuthPageProps) {
                     <div className="grid grid-cols-2 gap-3">
                       <button
                         type="button"
-                        onClick={() => setRole('freelancer')}
-                        className={`p-4 rounded-xl border-2 transition-all text-sm font-bold flex flex-col items-center gap-2 ${role === 'freelancer' ? 'bg-primary/20 border-primary text-primary' : 'bg-white/40 border-indigo-900/5 text-indigo-900/40 hover:bg-white/60'}`}
+                        onClick={() => setRole('job_seeker')}
+                        className={`p-4 rounded-xl border-2 transition-all text-sm font-bold flex flex-col items-center gap-2 ${role === 'job_seeker' ? 'bg-primary/20 border-primary text-primary' : 'bg-white/40 border-indigo-900/5 text-indigo-900/40 hover:bg-white/60'}`}
                       >
                         <User className="w-5 h-5" />
-                        {t("freelancer_role")}
+                        {t("job_seekers")}
                       </button>
                       <button
                         type="button"
-                        onClick={() => setRole('client')}
-                        className={`p-4 rounded-xl border-2 transition-all text-sm font-bold flex flex-col items-center gap-2 ${role === 'client' ? 'bg-primary/20 border-primary text-primary' : 'bg-white/40 border-indigo-900/5 text-indigo-900/40 hover:bg-white/60'}`}
+                        onClick={() => setRole('employer')}
+                        className={`p-4 rounded-xl border-2 transition-all text-sm font-bold flex flex-col items-center gap-2 ${role === 'employer' ? 'bg-primary/20 border-primary text-primary' : 'bg-white/40 border-indigo-900/5 text-indigo-900/40 hover:bg-white/60'}`}
                       >
                         <Briefcase className="w-5 h-5" />
-                        {t("hire_role")}
+                        {t("employers")}
                       </button>
                     </div>
                   </div>

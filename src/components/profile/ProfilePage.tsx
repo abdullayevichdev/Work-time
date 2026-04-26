@@ -18,6 +18,8 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc, getDocFromServer, updateDoc } from 'firebase/firestore';
 import { toast } from 'sonner';
 import { handleFirestoreError, OperationType } from '@/lib/firestore-errors';
+import { ADMIN_USERS } from '@/constants';
+import { calculateProfileCompletion } from '@/lib/profile';
 import { useRef } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -41,11 +43,33 @@ export function ProfilePage() {
   const [editedGithub, setEditedGithub] = useState('');
   const [editedTwitter, setEditedTwitter] = useState('');
   const [editedLinkedin, setEditedLinkedin] = useState('');
-  const [editedRole, setEditedRole] = useState<'freelancer' | 'client'>('freelancer');
+  const [editedPhone, setEditedPhone] = useState('');
+  const [editedRole, setEditedRole] = useState<'freelancer' | 'client' | 'admin'>('freelancer');
+  const [editedExperience, setEditedExperience] = useState<any[]>([]);
+  const [isRequesting, setIsRequesting] = useState(false);
+  const [hasRequestSent, setHasRequestSent] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [visitorProfile, setVisitorProfile] = useState<any>(null);
+  
   const isOwnProfile = !id || (user && user.uid === id);
+  const isProfileChecked = useRef(false);
+
+  useEffect(() => {
+    if (user && id && user.uid !== id) {
+      const fetchVisitorProfile = async () => {
+        const docSnap = await getDoc(doc(db, 'users', user.uid));
+        if (docSnap.exists()) {
+          setVisitorProfile(docSnap.data());
+        }
+      };
+      fetchVisitorProfile();
+    }
+  }, [id, user]);
+
+  const visitorCompletion = calculateProfileCompletion(visitorProfile);
+  const isVisitorComplete = visitorCompletion >= 80;
 
   useEffect(() => {
     let unsubscribe = () => {};
@@ -73,15 +97,28 @@ export function ProfilePage() {
           if (currentUser && currentUser.uid === targetId) {
             // Initialize edit states only if own profile
             setEditedName(data.full_name || currentUser.displayName || '');
-            setEditedTitle(data.title || 'Professional Creator');
+            setEditedTitle(data.title || t('prof_creator'));
             setEditedBio(data.bio || '');
             setEditedSkills(data.skills?.join(', ') || '');
             setEditedRate(data.hourly_rate || '45');
-            setEditedLocation(data.location || 'Tashkent, Uzbekistan');
+            setEditedLocation(data.location || t('uzbekistan'));
             setEditedGithub(data.socials?.github || '');
             setEditedTwitter(data.socials?.twitter || '');
             setEditedLinkedin(data.socials?.linkedin || '');
+            setEditedPhone(data.phone || '');
             setEditedRole(data.role || 'freelancer');
+            setEditedExperience(data.experience || [
+              { company: 'Company Name', role: 'Role Name', period: '2022 - Present', desc: 'Description here...' }
+            ]);
+          }
+
+          // Check if request already sent
+          if (currentUser && currentUser.uid !== targetId) {
+            const reqRef = doc(db, 'work_requests', `${currentUser.uid}_${targetId}`);
+            const reqSnap = await getDoc(reqRef);
+            if (reqSnap.exists()) {
+              setHasRequestSent(true);
+            }
           }
         } else {
           setProfile(null);
@@ -100,14 +137,17 @@ export function ProfilePage() {
       const targetProfileId = id || currentUser?.uid;
       
       if (targetProfileId) {
+        setProfile(null);
+        setLoading(true);
         fetchProfile(targetProfileId, currentUser);
       } else {
+        setProfile(null);
         setLoading(false); // Not logged in and no ID specified
       }
     });
 
     return () => unsubscribe();
-  }, [id]);
+  }, [id, navigate, t]);
 
   const handleSave = async () => {
     if (!user) return;
@@ -117,18 +157,20 @@ export function ProfilePage() {
       
       const updatedData = {
         full_name: editedName,
-        email: user.email, // Required by Firestore rules
+        email: user.email || '', // Required for validation
         title: editedTitle,
         bio: editedBio,
         skills: skillsArray,
         hourly_rate: editedRate,
         location: editedLocation,
         role: editedRole,
+        experience: editedExperience,
         socials: {
           github: editedGithub || '',
           twitter: editedTwitter || '',
           linkedin: editedLinkedin || ''
         },
+        phone: editedPhone,
         photo_url: profile?.photo_url || user.photoURL || '',
         is_new_user: false,
         last_updated: new Date().toISOString()
@@ -141,8 +183,84 @@ export function ProfilePage() {
       toast.success(t('profile_saved'));
     } catch (error: any) {
       console.error('Profile Save Error:', error);
-      toast.error(t('profile_save_error'));
+      handleFirestoreError(error, OperationType.UPDATE, `users/${user.uid}`);
     }
+  };
+
+  const handleSendRequest = async () => {
+    if (!user) return;
+    setIsRequesting(true);
+    try {
+      // We need the SENDER'S profile info (current user)
+      const ownProfileSnap = await getDoc(doc(db, 'users', user.uid));
+      const ownData = ownProfileSnap.exists() ? ownProfileSnap.data() : {};
+      
+      const requestId = `${user.uid}_${profile.id}`;
+      const senderName = ownData.full_name || user?.displayName || 'User';
+      const senderPhoto = ownData.photo_url || user?.photoURL || '';
+      
+      await setDoc(doc(db, 'work_requests', requestId), {
+        senderId: user.uid,
+        senderName: senderName,
+        senderPhoto: senderPhoto,
+        receiverId: profile.id,
+        receiverName: profile.full_name || 'User',
+        receiverPhoto: profile.photo_url || '',
+        status: 'pending',
+        createdAt: new Date().toISOString()
+      });
+      
+      // Also add a notification for the receiver
+      const notifId = `notif_${Date.now()}`;
+      await setDoc(doc(db, 'notifications', notifId), {
+        userId: profile.id,
+        fromUserId: user.uid,
+        fromUserName: senderName,
+        fromUserPhoto: senderPhoto,
+        type: 'work_request',
+        content: t('new_work_request', { name: senderName }),
+        read: false,
+        createdAt: new Date().toISOString()
+      });
+
+      setHasRequestSent(true);
+      toast.success(t('request_sent'));
+    } catch (error: any) {
+      handleFirestoreError(error, OperationType.WRITE, 'work_requests');
+    } finally {
+      setIsRequesting(false);
+    }
+  };
+
+  const addExperience = () => {
+    setEditedExperience([...editedExperience, { company: '', role: '', period: '', desc: '' }]);
+  };
+
+  const updateExperience = (index: number, field: string, value: string) => {
+    const updated = [...editedExperience];
+    updated[index] = { ...updated[index], [field]: value };
+    setEditedExperience(updated);
+  };
+
+  const removeExperience = (index: number) => {
+    setEditedExperience(editedExperience.filter((_, i) => i !== index));
+  };
+
+  const formatPhone = (val: string) => {
+    // Basic digits cleanup
+    const digits = val.replace(/\D/g, '');
+    
+    // Formatting logic (+998 90 123 45 67)
+    if (digits.length === 0) return '';
+    if (digits.length <= 3) return `+${digits}`;
+    if (digits.length <= 5) return `+${digits.slice(0, 3)} ${digits.slice(3)}`;
+    if (digits.length <= 8) return `+${digits.slice(0, 3)} ${digits.slice(3, 5)} ${digits.slice(5)}`;
+    if (digits.length <= 10) return `+${digits.slice(0, 3)} ${digits.slice(3, 5)} ${digits.slice(5, 8)} ${digits.slice(8)}`;
+    return `+${digits.slice(0, 3)} ${digits.slice(3, 5)} ${digits.slice(5, 8)} ${digits.slice(8, 10)} ${digits.slice(10, 12)}`;
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEditedPhone(formatPhone(e.target.value));
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -228,6 +346,34 @@ export function ProfilePage() {
     }
   };
 
+  if (!isOwnProfile && !isVisitorComplete && !loading && user) {
+    return (
+      <div className="pt-24 min-h-[70vh] flex items-center justify-center container mx-auto px-6">
+        <Card className="glass max-w-md w-full p-8 text-center border-white/10 relative overflow-hidden">
+          <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent" />
+          <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
+            <Loader2 className="w-10 h-10 text-primary animate-pulse" />
+          </div>
+          <h2 className="text-2xl font-display font-bold mb-4 text-indigo-950">{t('complete_profile_first')}</h2>
+          <p className="text-indigo-950/60 mb-8 leading-relaxed font-bold text-sharp uppercase tracking-tight text-xs">{t('complete_profile_desc')}</p>
+          <Button 
+            onClick={() => navigate('/profile')} 
+            className="w-full bg-primary hover:bg-primary/80 h-12 rounded-xl font-bold transition-all shadow-lg shadow-primary/20"
+          >
+            {t('complete_profile')}
+          </Button>
+          <Button 
+            onClick={() => navigate(-1)} 
+            variant="ghost"
+            className="w-full mt-4 text-indigo-950/40 hover:text-indigo-950 font-bold uppercase tracking-widest text-[10px]"
+          >
+            {t('go_back')}
+          </Button>
+        </Card>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -263,10 +409,10 @@ export function ProfilePage() {
               className="glass p-6 sm:p-8 rounded-[2.5rem] border-white/10 text-center relative overflow-hidden group shadow-2xl"
             >
               <div className="absolute top-0 right-0 p-5">
-                {profile?.is_premium ? (
-                  <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-black border-none font-black text-[10px] tracking-widest shadow-lg shadow-yellow-500/20">PREMIUM</Badge>
-                ) : profile?.premium_status === 'pending' ? (
-                  <Badge className="bg-amber-500/20 text-amber-500 border-amber-500/30 font-black text-[10px] tracking-widest">PENDING RENEWAL</Badge>
+                {(profile?.email && ADMIN_USERS[profile.email.toLowerCase()]) ? (
+                  <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-black border-none font-black text-[10px] tracking-widest shadow-lg shadow-yellow-500/20">OWNER</Badge>
+                ) : (profile?.is_premium) ? (
+                  <Badge className="bg-gradient-to-r from-blue-400 to-indigo-500 text-white border-none font-black text-[10px] tracking-widest px-3 uppercase">PREMIUM</Badge>
                 ) : (
                   <Badge variant="outline" className="border-indigo-900/10 text-indigo-900/40 font-bold text-[10px] tracking-widest">{t('free_plan').toUpperCase()}</Badge>
                 )}
@@ -278,7 +424,7 @@ export function ProfilePage() {
                 <div className="absolute inset-0 -m-6 rounded-full border border-primary/5 scale-90" />
                 
                 <Avatar className="w-32 h-32 border-[6px] border-white p-1.5 bg-gradient-to-br from-primary via-blue-500 to-cyan-400 shadow-2xl relative z-10 overflow-hidden">
-                  <AvatarImage src={profile?.photo_url || user?.photoURL || ''} className="rounded-full object-cover" />
+                  <AvatarImage src={profile?.photo_url || (isOwnProfile ? user?.photoURL : undefined)} className="rounded-full object-cover" />
                   <AvatarFallback className="bg-white text-primary text-4xl font-bold">
                     {profile?.full_name?.[0] || 'U'}
                   </AvatarFallback>
@@ -345,7 +491,9 @@ export function ProfilePage() {
                     {profile?.full_name || t('no_name')}
                   </h2>
                   <div className="flex flex-wrap items-center justify-center gap-2 mb-6">
-                    <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5 text-[10px] uppercase font-bold tracking-widest whitespace-nowrap">{profile?.role === 'client' ? t('hire_role') : t('freelancer_role')}</Badge>
+                    <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5 text-[10px] uppercase font-bold tracking-widest whitespace-nowrap">
+                      {profile?.role === 'client' ? t('hire_role') : t('freelancer_role')}
+                    </Badge>
                     <span className="text-indigo-950/40 text-xs md:text-sm font-bold text-sharp uppercase tracking-tight text-center">{profile?.title || t('prof_creator')}</span>
                   </div>
                 </div>
@@ -354,11 +502,11 @@ export function ProfilePage() {
               <div className="grid grid-cols-3 gap-2 sm:gap-4 py-4 sm:py-6 border-y border-indigo-900/5 my-6 leading-none">
                 <div>
                   <p className="text-lg sm:text-xl font-bold text-indigo-950 text-sharp">4.9</p>
-                  <p className="text-[9px] sm:text-[10px] text-indigo-900/40 uppercase tracking-tighter text-sharp">Rating</p>
+                  <p className="text-[9px] sm:text-[10px] text-indigo-900/40 uppercase tracking-tighter text-sharp">{t('rating')}</p>
                 </div>
                 <div>
                   <p className="text-lg sm:text-xl font-bold text-indigo-950 text-sharp">12</p>
-                  <p className="text-[9px] sm:text-[10px] text-indigo-900/40 uppercase tracking-tighter text-sharp">Jobs</p>
+                  <p className="text-[9px] sm:text-[10px] text-indigo-900/40 uppercase tracking-tighter text-sharp">{t('profile_jobs')}</p>
                 </div>
                 <div>
                   {isEditing ? (
@@ -373,17 +521,22 @@ export function ProfilePage() {
                   ) : (
                     <p className="text-lg sm:text-xl font-bold text-indigo-950 text-sharp">${profile?.hourly_rate || '45'}</p>
                   )}
-                  <p className="text-[9px] sm:text-[10px] text-indigo-900/40 uppercase tracking-tighter text-sharp">Rate/h</p>
+                  <p className="text-[9px] sm:text-[10px] text-indigo-900/40 uppercase tracking-tighter text-sharp">{t('rate_h')}</p>
                 </div>
               </div>
 
               <div className="flex gap-3">
                 {!isOwnProfile ? (
                   <Button 
-                    onClick={() => navigate(`/messages?userId=${profile.id}`)}
+                    onClick={handleSendRequest}
+                    disabled={isRequesting || hasRequestSent}
                     className="flex-1 bg-primary text-white hover:bg-primary/90 h-11 md:h-12 rounded-xl font-bold text-sharp"
                   >
-                    <Mail className="w-4 h-4 mr-2" /> Message
+                    {hasRequestSent ? (
+                      <><Check className="w-4 h-4 mr-2" /> {t('request_sent')}</>
+                    ) : (
+                      <><Edit3 className="w-4 h-4 mr-2" /> {t('send_request')}</>
+                    )}
                   </Button>
                 ) : isEditing ? (
                   <Button onClick={handleSave} className="flex-1 bg-primary hover:bg-primary/80 h-11 md:h-12 rounded-xl">
@@ -415,13 +568,29 @@ export function ProfilePage() {
                   <div className="w-8 h-8 rounded-lg bg-indigo-900/5 flex items-center justify-center border border-indigo-900/5 group-hover:border-primary/50 transition-colors shrink-0">
                     <Mail className="w-3.5 h-3.5 text-indigo-900/60 group-hover:text-primary" />
                   </div>
-                  <span className="text-sm text-indigo-950/60 font-bold truncate text-sharp overflow-hidden">{user?.email}</span>
+                  <span className="text-sm text-indigo-950/60 font-bold truncate text-sharp overflow-hidden">{profile?.email || user?.email}</span>
                 </div>
                 
-                <div className="flex items-center gap-4 group">
-                  <div className="w-8 h-8 rounded-lg bg-indigo-900/5 flex items-center justify-center border border-indigo-900/5 group-hover:border-primary/50 transition-colors">
-                    <MapPin className="w-3.5 h-3.5 text-indigo-900/60 group-hover:text-primary" />
+                  <div className="flex items-center gap-4 group">
+                    <div className="w-8 h-8 rounded-lg bg-indigo-900/5 flex items-center justify-center border border-indigo-900/5 group-hover:border-primary/50 transition-colors">
+                      <Globe className="w-3.5 h-3.5 text-indigo-900/60 group-hover:text-primary" />
+                    </div>
+                    {isEditing ? (
+                      <Input 
+                        value={editedPhone} 
+                        onChange={handlePhoneChange}
+                        placeholder="+998 90 123 45 67"
+                        className="bg-white/40 border-indigo-900/10 p-2 h-8 text-sm text-indigo-950 font-bold rounded-lg"
+                      />
+                    ) : (
+                      <span className="text-sm text-indigo-950/60 font-bold text-sharp">{profile?.phone || t('no_phone')}</span>
+                    )}
                   </div>
+
+                  <div className="flex items-center gap-4 group">
+                    <div className="w-8 h-8 rounded-lg bg-indigo-900/5 flex items-center justify-center border border-indigo-900/5 group-hover:border-primary/50 transition-colors">
+                      <MapPin className="w-3.5 h-3.5 text-indigo-900/60 group-hover:text-primary" />
+                    </div>
                   {isEditing ? (
                     <Input 
                       value={editedLocation} 
@@ -451,9 +620,9 @@ export function ProfilePage() {
                     </div>
                   ) : (
                     <>
-                      <motion.a whileHover={{ y: -3 }} href={profile?.socials?.github} className="text-indigo-900/30 hover:text-primary"><Github className="w-5 h-5" /></motion.a>
-                      <motion.a whileHover={{ y: -3 }} href={profile?.socials?.twitter} className="text-indigo-900/30 hover:text-primary"><Twitter className="w-5 h-5" /></motion.a>
-                      <motion.a whileHover={{ y: -3 }} href={profile?.socials?.linkedin} className="text-indigo-900/30 hover:text-primary"><Linkedin className="w-5 h-5" /></motion.a>
+                      <motion.a whileHover={{ y: -3 }} href={profile?.socials?.github || '#'} className="text-indigo-900/30 hover:text-primary"><Github className="w-5 h-5" /></motion.a>
+                      <motion.a whileHover={{ y: -3 }} href={profile?.socials?.twitter || '#'} className="text-indigo-900/30 hover:text-primary"><Twitter className="w-5 h-5" /></motion.a>
+                      <motion.a whileHover={{ y: -3 }} href={profile?.socials?.linkedin || '#'} className="text-indigo-900/30 hover:text-primary"><Linkedin className="w-5 h-5" /></motion.a>
                     </>
                   )}
                 </div>
@@ -468,7 +637,6 @@ export function ProfilePage() {
               animate={{ opacity: 1, x: 0 }}
               className="glass-dark p-8 md:p-12 rounded-[3.5rem] border-white/5 relative overflow-hidden"
             >
-              {/* Decorative side accent */}
               <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-primary/50 to-transparent" />
               
               <div className="flex items-center justify-between mb-10">
@@ -541,27 +709,78 @@ export function ProfilePage() {
             >
               <div className="flex items-center justify-between mb-8">
                 <h3 className="text-2xl font-bold text-indigo-950 text-sharp">{t('prof_history')}</h3>
-                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Briefcase className="w-5 h-5 text-primary" />
+                <div className="flex gap-2">
+                  {isEditing && (
+                    <Button onClick={addExperience} size="sm" variant="ghost" className="h-10 w-10 p-0 rounded-full bg-primary/10 text-primary">
+                      <Plus className="w-5 h-5" />
+                    </Button>
+                  )}
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Briefcase className="w-5 h-5 text-primary" />
+                  </div>
                 </div>
               </div>
 
               <div className="space-y-8">
-                {[1, 2].map((i) => (
-                  <div key={i} className="flex gap-6 group">
+                {(isEditing ? editedExperience : profile?.experience || []).map((exp: any, i: number) => (
+                  <div key={i} className="flex gap-6 group relative">
                     <div className="relative">
                       <div className="w-12 h-12 rounded-2xl bg-indigo-900/5 flex items-center justify-center border border-indigo-900/5 group-hover:border-primary/50 transition-all z-10 relative">
                         <Award className="w-6 h-6 text-indigo-900/50 group-hover:text-primary" />
                       </div>
-                      {i === 1 && <div className="absolute top-12 bottom-[-32px] left-1/2 -translate-x-1/2 w-px bg-indigo-900/5" />}
+                      {i < (isEditing ? editedExperience : profile?.experience || []).length - 1 && (
+                        <div className="absolute top-12 bottom-[-32px] left-1/2 -translate-x-1/2 w-px bg-indigo-900/5" />
+                      )}
                     </div>
-                    <div className="space-y-1">
-                      <h4 className="font-bold text-lg text-indigo-950 text-sharp">Senior Product Designer</h4>
-                      <p className="text-primary text-sm font-black uppercase tracking-widest shadow-sm">Meta Platforms • 2022 - Present</p>
-                      <p className="text-indigo-950/60 text-sm max-w-xl font-bold text-sharp">Led the redesign of the main interface, increasing user engagement by 45%. Collaborated with global teams.</p>
+                    <div className="space-y-2 flex-1">
+                      {isEditing ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white/5 p-4 rounded-xl relative">
+                          <button 
+                            onClick={() => removeExperience(i)}
+                            className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-red-600 transition-colors"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                          <Input 
+                            value={exp.role} 
+                            onChange={(e) => updateExperience(i, 'role', e.target.value)} 
+                            placeholder="Role (e.g. Senior Product Designer)" 
+                            className="bg-transparent border-indigo-900/10 text-indigo-950 font-bold"
+                          />
+                          <Input 
+                            value={exp.company} 
+                            onChange={(e) => updateExperience(i, 'company', e.target.value)} 
+                            placeholder="Company (e.g. Meta Platforms)" 
+                            className="bg-transparent border-indigo-900/10 text-indigo-950 font-bold"
+                          />
+                          <Input 
+                            value={exp.period} 
+                            onChange={(e) => updateExperience(i, 'period', e.target.value)} 
+                            placeholder="Period (e.g. 2022 - Present)" 
+                            className="bg-transparent border-indigo-900/10 text-indigo-950 font-bold"
+                          />
+                          <Textarea 
+                            value={exp.desc} 
+                            onChange={(e) => updateExperience(i, 'desc', e.target.value)} 
+                            placeholder="Description of your achievements..." 
+                            className="bg-transparent border-indigo-900/10 text-indigo-950 md:col-span-2"
+                          />
+                        </div>
+                      ) : (
+                        <>
+                          <h4 className="font-bold text-lg text-indigo-950 text-sharp truncate">{exp.role}</h4>
+                          <p className="text-primary text-sm font-black uppercase tracking-widest shadow-sm truncate">{exp.company} • {exp.period}</p>
+                          <p className="text-indigo-950/60 text-sm max-w-xl font-bold text-sharp whitespace-pre-wrap">{exp.desc}</p>
+                        </>
+                      )}
                     </div>
                   </div>
                 ))}
+                {(!isEditing && (!profile?.experience || profile.experience.length === 0)) && (
+                  <div className="text-center py-6 opacity-30">
+                    <p className="text-sm font-bold uppercase tracking-widest">{t('no_activity')}</p>
+                  </div>
+                )}
               </div>
             </motion.div>
           </div>

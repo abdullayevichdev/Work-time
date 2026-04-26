@@ -85,7 +85,7 @@ export function Hero() {
         >
           <motion.div 
             variants={itemVariants} 
-            className="inline-flex items-center gap-2 px-4 md:px-6 py-2 md:py-2.5 rounded-full liquid-glass border-white/20 text-primary text-[9px] md:text-xs font-black tracking-[0.3em] uppercase mb-12 md:mb-16 relative group cursor-default"
+            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full liquid-glass border-white/20 text-primary text-[10px] md:text-xs font-black tracking-[0.3em] uppercase mb-12 md:mb-16 relative group cursor-default"
           >
             <div className="specular-glow opacity-50" />
             <Sparkles className="w-3.5 h-3.5 animate-pulse" />
@@ -101,14 +101,14 @@ export function Hero() {
           
           <motion.h1 
             variants={itemVariants}
-            className="text-3xl sm:text-5xl md:text-8xl lg:text-[11.5rem] font-display font-bold tracking-tighter mb-8 md:mb-12 leading-[1.1] md:leading-[0.8] text-indigo-950 flex flex-col items-center select-none perspective-1000"
+            className="text-4xl sm:text-6xl md:text-8xl lg:text-[min(11.5rem,15vw)] font-display font-bold tracking-tighter mb-8 md:mb-12 leading-[1.1] md:leading-[0.85] text-indigo-950 flex flex-col items-center select-none perspective-1000"
           >
             <motion.span 
               className="inline-block relative z-30 drop-shadow-[0_15px_30px_rgba(139,92,246,0.1)] will-change-transform text-indigo-900/40"
             >
               {t("hero_title_1")}
             </motion.span>
-            <div className="relative h-[1.2em] w-full flex items-center justify-center">
+            <div className="relative h-[1.3em] w-full flex items-center justify-center">
               <AnimatePresence mode="wait">
                 <motion.div 
                   key={textIndex}
@@ -119,11 +119,11 @@ export function Hero() {
                   className="absolute inset-0 z-10 mt-2 md:mt-4 group cursor-default select-none -skew-x-6 flex items-center justify-center translate-z-0"
                 >
                   {/* Liquid Volumetric Highlight */}
-                  <span className="absolute inset-0 blur-3xl opacity-30 bg-gradient-to-r from-cyan-300 via-primary/20 to-indigo-400/20 pointer-events-none transition-all duration-[2s] group-hover:opacity-50 group-hover:scale-125">
+                  <span className="absolute inset-0 blur-3xl opacity-30 bg-gradient-to-r from-cyan-300 via-primary/20 to-indigo-400/20 pointer-events-none transition-all duration-[2s] group-hover:opacity-50 group-hover:scale-125 whitespace-nowrap">
                     {words[textIndex]}.
                   </span>
                   
-                  <span className="relative inline-block text-liquid text-sharp pb-2">
+                  <span className="relative inline-block text-liquid text-sharp pb-2 whitespace-nowrap text-[0.8em] md:text-[1em]">
                     {words[textIndex]}.
                   </span>
 
@@ -150,7 +150,7 @@ export function Hero() {
 
           <motion.p 
             variants={itemVariants}
-            className="text-[13px] md:text-2xl text-indigo-950/40 max-w-2xl mx-auto mb-10 md:mb-16 leading-relaxed font-light tracking-wide px-4 text-sharp"
+            className="text-[15px] md:text-2xl text-indigo-950/40 max-w-2xl mx-auto mb-10 md:mb-16 leading-relaxed font-light tracking-wide px-4 text-sharp"
           >
             {t("hero_desc")}
           </motion.p>
@@ -160,7 +160,7 @@ export function Hero() {
                   <div className="absolute -inset-1 bg-gradient-to-r from-primary to-cyan-500 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
                   <Button
                     size="lg"
-                    className="relative w-full sm:w-auto h-10 md:h-16 px-6 md:px-14 text-xs md:text-xl bg-primary hover:bg-primary/90 text-white rounded-xl md:rounded-2xl shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 text-sharp font-black uppercase tracking-widest"
+                    className="relative w-full sm:w-auto h-11 md:h-16 px-8 md:px-14 text-sm md:text-xl bg-primary hover:bg-primary/90 text-white rounded-2xl shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 text-sharp font-black uppercase tracking-widest"
                     nativeButton={false}
                     render={
                       <Link to="/signup" className="flex items-center gap-3">
@@ -174,7 +174,7 @@ export function Hero() {
                 <Button
                   size="lg"
                   variant="outline"
-                  className="w-full sm:w-auto h-10 md:h-16 px-6 md:px-14 text-xs md:text-xl liquid-glass border-white/10 hover:bg-white/5 rounded-xl md:rounded-2xl transition-all duration-300 hover:border-white/20 text-sharp uppercase tracking-widest flex items-center justify-center"
+                  className="w-full sm:w-auto h-11 md:h-16 px-8 md:px-14 text-sm md:text-xl liquid-glass border-white/10 hover:bg-white/5 rounded-2xl transition-all duration-300 hover:border-white/20 text-sharp uppercase tracking-widest flex items-center justify-center"
                   nativeButton={false}
                   render={<Link to="/jobs">{t("explore_jobs")}</Link>}
                 />

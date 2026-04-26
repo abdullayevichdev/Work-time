@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db, auth } from '@/lib/firebase';
-import { collection, query, onSnapshot, doc, updateDoc, where, orderBy } from 'firebase/firestore';
+import { collection, query, onSnapshot, doc, updateDoc, where, orderBy, limit } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,13 +18,17 @@ export function AdminDashboard() {
   const [premiumRequests, setPremiumRequests] = useState<any[]>([]);
   const [standardUsers, setStandardUsers] = useState<any[]>([]);
   const [premiumUsers, setPremiumUsers] = useState<any[]>([]);
+  const [workRequests, setWorkRequests] = useState<any[]>([]);
+  const [recentMessages, setRecentMessages] = useState<any[]>([]);
   const [stats, setStats] = useState({ users: 0, jobs: 0, premium: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let unsubRequests: () => void = () => {};
     let unsubUsers: () => void = () => {};
     let unsubJobs: () => void = () => {};
+    let unsubRequests: () => void = () => {};
+    let unsubPremium: () => void = () => {};
+    let unsubMessages: () => void = () => {};
 
     // 0. Permission check
     const checkAdmin = onAuthStateChanged(auth, (u) => {
@@ -43,20 +47,14 @@ export function AdminDashboard() {
       console.log(`Admin check passed for: ${ADMIN_USERS[u.email.toLowerCase()]}`);
       setLoading(true);
 
-      // 1. Real-time Premium Requests
-      const qRequests = query(collection(db, 'premium_requests'), orderBy('created_at', 'desc'));
-      unsubRequests = onSnapshot(qRequests, (snap) => {
-        setPremiumRequests(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-        setLoading(false);
-      }, (err) => {
-        console.error("Premium requests listener error:", err);
-        setLoading(false);
-      });
-
-      // 2. Real-time Users Stat & Standard Users List
+      // 1. Real-time Users Stat & Standard Users List
       unsubUsers = onSnapshot(collection(db, 'users'), (snap) => {
         const usersData = snap.docs.map(d => ({ id: d.id, ...d.data() } as any));
-        const premiumCount = usersData.filter(u => u.is_premium).length;
+        
+        // Premium check based on admin emails
+        const adminEmails = ['abdulxayavazxanov2012@gmail.com', 'unknownprogrammerdev@gmail.com', 'tuyginovsardor4@gmail.com'];
+        const premiumCount = usersData.filter(u => u.is_premium || adminEmails.includes(u.email)).length;
+        
         setStats(prev => ({
           ...prev,
           users: snap.size,
@@ -64,7 +62,7 @@ export function AdminDashboard() {
         }));
         
         // Filter standard users
-        const registeredStandardUsers = usersData.filter(u => !u.is_premium).sort((a: any, b: any) => {
+        const registeredStandardUsers = usersData.filter(u => !u.is_premium && !adminEmails.includes(u.email)).sort((a: any, b: any) => {
            const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
            const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
            return timeB - timeA;
@@ -72,17 +70,19 @@ export function AdminDashboard() {
         setStandardUsers(registeredStandardUsers);
         
         // Filter premium users
-        const registeredPremiumUsers = usersData.filter(u => u.is_premium).sort((a: any, b: any) => {
+        const registeredPremiumUsers = usersData.filter(u => u.is_premium || adminEmails.includes(u.email)).sort((a: any, b: any) => {
            const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
            const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
            return timeB - timeA;
         });
         setPremiumUsers(registeredPremiumUsers);
+        setLoading(false);
       }, (err) => {
         console.error("Users listener error:", err);
+        setLoading(false);
       });
 
-      // 3. Real-time Jobs Stat
+      // 2. Real-time Jobs Stat
       unsubJobs = onSnapshot(collection(db, 'jobs'), (snap) => {
         setStats(prev => ({
           ...prev,
@@ -91,13 +91,36 @@ export function AdminDashboard() {
       }, (err) => {
         console.error("Jobs listener error:", err);
       });
+
+      // 3. Real-time Work Requests Log
+      unsubRequests = onSnapshot(query(collection(db, 'work_requests'), orderBy('createdAt', 'desc'), limit(50)), (snap) => {
+        setWorkRequests(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      }, (err) => {
+        console.error("Requests listener error:", err);
+      });
+
+      // 4. Real-time Premium Requests
+      unsubPremium = onSnapshot(query(collection(db, 'premium_requests'), orderBy('created_at', 'desc')), (snap) => {
+        setPremiumRequests(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      }, (err) => {
+        console.error("Premium listener error:", err);
+      });
+
+      // 5. Real-time Recent Support Messages
+      unsubMessages = onSnapshot(query(collection(db, 'messages'), where('participants', 'array-contains', 'platform_support'), orderBy('created_at', 'desc'), limit(50)), (snap) => {
+        setRecentMessages(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter((m: any) => m.sender_id !== 'platform_support'));
+      }, (err) => {
+        console.error("Messages listener error:", err);
+      });
     });
 
     return () => {
       checkAdmin();
-      unsubRequests();
       unsubUsers();
       unsubJobs();
+      unsubRequests();
+      unsubPremium();
+      unsubMessages();
     };
   }, [navigate]);
 
@@ -142,7 +165,7 @@ export function AdminDashboard() {
         <p className="text-indigo-950/60 font-medium">{t('platform_stats_desc')}</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card className="glass border-white/10">
           <CardContent className="p-6 flex items-center gap-4">
             <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center">
@@ -165,98 +188,115 @@ export function AdminDashboard() {
             </div>
           </CardContent>
         </Card>
-        <Card className="glass border-white/10">
-          <CardContent className="p-6 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-yellow-500/10 flex items-center justify-center">
-              <CreditCard className="w-6 h-6 text-yellow-400" />
-            </div>
-            <div>
-              <p className="text-sm text-indigo-950/40 font-medium">{t('premium_users_count')}</p>
-              <h3 className="text-2xl font-bold text-indigo-950">{stats.premium}</h3>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       <section className="mb-12">
         <h2 className="text-2xl font-display font-bold mb-6 flex items-center gap-2">
-          <Shield className="w-6 h-6 text-primary" />
-          {t('premium_requests_title')}
+          <FileText className="w-6 h-6 text-primary" />
+          {t('admin_activity')}
         </h2>
-        
-        <div className="space-y-4">
-          {premiumRequests.map((req) => (
-            <Card key={req.id} className="glass border-white/10">
-              <CardContent className="p-6 flex flex-col md:flex-row items-center justify-between gap-6">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-1">
-                    <h4 className="font-bold">{req.user_name}</h4>
-                    <Badge variant="outline" className="text-[10px] border-white/10">{req.user_email}</Badge>
-                  </div>
-                  <p className="text-xs text-indigo-950/40">{t('requested_at')} {new Date(req.created_at).toLocaleString()}</p>
-                  <div className="mt-3 flex items-center gap-3">
-                    {req.receipt_url ? (
-                      <Dialog>
-                        <DialogTrigger className="bg-transparent border-none p-0 outline-none">
-                          <Badge variant="secondary" className="text-[10px] bg-primary/10 text-primary hover:bg-primary/20 cursor-pointer shadow-sm border border-primary/20 px-3 py-1">
-                            <FileText className="w-3.5 h-3.5 mr-1.5" /> {t('view_receipt')} {req.receipt_name} <Maximize2 className="w-3 h-3 ml-2 opacity-50"/>
-                          </Badge>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-[90vw] md:max-w-4xl w-full p-0 overflow-hidden bg-transparent border-0 shadow-2xl rounded-2xl">
-                          <div className="relative group">
-                            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm -z-10" />
-                            <img src={req.receipt_url} alt="Receipt Preview" className="w-full h-auto max-h-[85vh] object-contain rounded-2xl" />
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                    ) : (
-                      <Badge variant="secondary" className="text-[9px] bg-white/20">
-                        <FileText className="w-3 h-3 mr-1" /> {req.receipt_name}
-                      </Badge>
-                    )}
-                    <span className="text-[10px] text-indigo-900/40 italic">{t('file_verified')}</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-4">
-                  <Badge 
-                    className={`capitalize ${
-                      req.status === 'approved' ? 'bg-green-500/20 text-green-400' :
-                      req.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
-                      'bg-yellow-500/20 text-yellow-400'
-                    }`}
-                  >
-                    {req.status}
-                  </Badge>
-                  
-                  {req.status === 'pending' && (
-                    <div className="flex gap-2">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <Card className="glass border-white/10 overflow-hidden">
+            <CardHeader className="border-b border-white/5 py-4 px-6 md:px-8 bg-white/5">
+              <CardTitle className="text-sm font-bold text-indigo-950/40 uppercase tracking-widest text-sharp">
+                {t('admin_activity_desc')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="max-h-[400px] overflow-y-auto divide-y divide-indigo-900/5">
+                {workRequests.map((req) => (
+                  <div key={req.id} className="p-4 md:p-6 flex items-start gap-4 hover:bg-white/5 transition-colors group">
+                    <div className={`w-2 h-2 mt-2 rounded-full shrink-0 ${
+                      req.status === 'accepted' ? 'bg-green-500 shadow-sm shadow-green-500/20' : 
+                      req.status === 'rejected' ? 'bg-red-500' : 'bg-yellow-500 animate-pulse'
+                    }`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-indigo-950 font-bold mb-1 text-sharp">
+                        {req.status === 'accepted' ? (
+                          t('request_accepted_by', { sender: req.senderName, receiver: req.receiverName })
+                        ) : (
+                          t('request_sent_by', { sender: req.senderName, receiver: req.receiverName })
+                        )}
+                      </p>
+                      <div className="flex items-center gap-4">
+                        <span className="text-[10px] text-indigo-900/40 font-bold uppercase tracking-tighter">
+                          {new Date(req.createdAt).toLocaleString()}
+                        </span>
+                        <Badge variant="secondary" className={`text-[8px] font-black uppercase tracking-widest px-2 py-0 ${
+                          req.status === 'accepted' ? 'bg-green-500/10 text-green-600' : 
+                          req.status === 'rejected' ? 'bg-red-500/10 text-red-600' : 
+                          'bg-yellow-500/10 text-yellow-600'
+                        }`}>
+                          {req.status}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 shrink-0">
                       <Button 
-                        size="sm" 
                         variant="ghost" 
-                        className="text-red-400 hover:bg-red-400/10"
-                        onClick={() => handleRejectPremium(req)}
+                        size="sm" 
+                        className="h-8 w-8 p-0 rounded-lg hover:bg-primary/10 hover:text-primary"
+                        onClick={() => navigate(`/profile/${req.senderId}`)}
+                        title="View Sender"
                       >
-                        <X className="w-4 h-4" />
+                        <User className="w-4 h-4" />
                       </Button>
                       <Button 
+                        variant="ghost" 
                         size="sm" 
-                        className="bg-green-600 hover:bg-green-500"
-                        onClick={() => handleApprovePremium(req)}
+                        className="h-8 w-8 p-0 rounded-lg hover:bg-primary/10 hover:text-primary"
+                        onClick={() => navigate(`/profile/${req.receiverId}`)}
+                        title="View Receiver"
                       >
-                        <Check className="w-4 h-4" />
+                        <ExternalLink className="w-4 h-4" />
                       </Button>
                     </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-          {premiumRequests.length === 0 && (
-            <div className="text-center py-12 glass border-indigo-900/5 rounded-2xl text-indigo-900/40">
-              {t('no_pending_requests')}
-            </div>
-          )}
+                  </div>
+                ))}
+                {workRequests.length === 0 && (
+                  <div className="p-12 text-center text-indigo-900/20 font-bold uppercase tracking-widest text-xs">
+                    {t('no_activity')}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="glass border-white/10 overflow-hidden">
+            <CardHeader className="border-b border-white/5 py-4 px-6 md:px-8 bg-white/5">
+              <CardTitle className="text-sm font-bold text-indigo-950/40 uppercase tracking-widest text-sharp flex items-center justify-between">
+                Recent Support Messages
+                <Button variant="link" onClick={() => navigate('/messages?userId=platform_support')} className="text-[10px] text-primary p-0 h-auto">View All</Button>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="max-h-[400px] overflow-y-auto divide-y divide-indigo-900/5">
+                {recentMessages.map((msg) => (
+                  <div key={msg.id} className="p-4 md:p-6 flex items-start gap-4 hover:bg-white/5 transition-colors group cursor-pointer" onClick={() => navigate(`/messages?userId=support_${msg.sender_id}`)}>
+                    <div className="w-10 h-10 rounded-full overflow-hidden border border-white/10 bg-white/20 shrink-0">
+                      <img src={msg.sender_avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${msg.sender_id}`} alt="avatar" className="w-full h-full object-cover" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-indigo-950 font-bold mb-1 text-sharp truncate">
+                        {msg.sender_name}
+                      </p>
+                      <p className="text-xs text-indigo-950/60 line-clamp-2">
+                        {msg.text}
+                      </p>
+                      <div className="text-[10px] text-indigo-900/40 font-bold uppercase tracking-tighter mt-2">
+                        {new Date(msg.created_at).toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {recentMessages.length === 0 && (
+                  <div className="p-12 text-center text-indigo-900/20 font-bold uppercase tracking-widest text-xs">
+                    No recent messages
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </section>
 
