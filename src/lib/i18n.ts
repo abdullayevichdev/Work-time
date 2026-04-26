@@ -676,7 +676,9 @@ const resources = {
       "support_chat_name": "Platforma qo'llab-quvvatlash (Adminlar)",
       "accept_request": "So'rovni qabul qilish",
       "request_accepted_notify": "Siz {{name}}ga so'rov yubordingiz va u qabul qilindi!",
-      "new_request_notify": "Sizda {{name}}dan yangi ish so'rovi bor!"
+      "new_request_notify": "Sizda {{name}}dan yangi ish so'rovi bor!",
+      "freelancer_role": "Ish Qidiruvchi",
+      "hire_role": "Ish Beruvchi"
     }
   },
   ru: {
@@ -1074,10 +1076,12 @@ const resources = {
 
       // Toast messages
       "approved_premium": "Одобрен премиум для",
-      "failed_to_approve": "Ошибка одобрения",
+      "failed_to_approve": "Не удалось одобрить",
       "request_rejected": "Запрос отклонен",
-      "failed_to_reject": "Ошибка отклонения",
-      "loading_admin": "Загрузка панели админа..."
+      "failed_to_reject": "Не удалось отклонить",
+      "loading_admin": "Загрузка панели администратора...",
+      "freelancer_role": "Соискатель",
+      "hire_role": "Работодатель"
     }
   }
 };

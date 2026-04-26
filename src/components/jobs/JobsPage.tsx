@@ -25,6 +25,7 @@ export function JobsPage() {
   const [usersList, setUsersList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedRole, setSelectedRole] = useState<string | null>('freelancer');
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
 
@@ -67,9 +68,10 @@ export function JobsPage() {
   }, []);
 
   const filteredUsers = usersList.filter(u => 
-    (u.full_name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+    (selectedRole === null || u.role === selectedRole) &&
+    ((u.full_name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
     (u.title?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
-    (u.skills?.some((s: string) => s.toLowerCase().includes(searchQuery.toLowerCase())))
+    (u.skills?.some((s: string) => s.toLowerCase().includes(searchQuery.toLowerCase()))))
   );
 
   return (
@@ -106,12 +108,16 @@ export function JobsPage() {
             </CardHeader>
             <CardContent className="space-y-2">
               {[
-                { label: t('job_seekers'), id: 'job_seeker' },
-                { label: t('employers'), id: 'employer' }
+                { label: t('job_seekers'), id: 'freelancer' },
+                { label: t('employers'), id: 'client' }
               ].map(cat => (
-                <div key={cat.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-white/40 cursor-pointer transition-colors group">
-                  <span className="text-indigo-900/60 group-hover:text-primary font-medium text-sharp">{cat.label}</span>
-                  <Badge variant="outline" className="border-indigo-900/10 text-indigo-900/40">
+                <div 
+                  key={cat.id} 
+                  onClick={() => setSelectedRole(selectedRole === cat.id ? null : cat.id)}
+                  className={`flex items-center justify-between p-2 rounded-lg hover:bg-white/40 cursor-pointer transition-colors group ${selectedRole === cat.id ? 'bg-primary/10' : ''}`}
+                >
+                  <span className={`font-medium text-sharp ${selectedRole === cat.id ? 'text-primary' : 'text-indigo-900/60 group-hover:text-primary'}`}>{cat.label}</span>
+                  <Badge variant="outline" className={`${selectedRole === cat.id ? 'border-primary/30 text-primary bg-primary/5' : 'border-indigo-900/10 text-indigo-900/40'}`}>
                     {usersList.filter(u => u.role === cat.id).length}
                   </Badge>
                 </div>
@@ -173,7 +179,7 @@ export function JobsPage() {
                               <MapPin className="w-3 h-3 text-primary" /> {u.location || t('uzbekistan')}
                             </span>
                             <span className="flex items-center gap-1">
-                              <Briefcase className="w-3 h-3 text-primary" /> {u.role === 'employer' ? t('employers') : t('job_seekers')}
+                              <Briefcase className="w-3 h-3 text-primary" /> {u.role === 'client' ? t('employers') : t('job_seekers')}
                             </span>
                           </div>
                         </div>
@@ -192,11 +198,13 @@ export function JobsPage() {
                         ))}
                       </div>
                     </CardContent>
-                    <CardFooter className="flex items-center justify-between border-t border-indigo-900/5 pt-6">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xl md:text-2xl font-bold text-indigo-950 text-sharp">${u.hourly_rate || '45'}</span>
-                        <span className="text-indigo-900/40 text-xs md:text-sm font-medium text-sharp">/ {t('hr')}</span>
-                      </div>
+                    <CardFooter className={`flex items-center ${u.hourly_rate ? 'justify-between' : 'justify-end'} border-t border-indigo-900/5 pt-6`}>
+                      {u.hourly_rate && (
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xl md:text-2xl font-bold text-indigo-950 text-sharp">${u.hourly_rate}</span>
+                          <span className="text-indigo-900/40 text-xs md:text-sm font-medium text-sharp">/ {t('hr')}</span>
+                        </div>
+                      )}
                       <div className="flex gap-2">
                         <Button 
                           variant="ghost" 

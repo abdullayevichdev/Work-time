@@ -115,8 +115,12 @@ export function TalentsPage() {
 
                   <div className="pt-6 border-t border-indigo-900/5 flex items-center justify-between">
                     <div>
-                      <p className="text-xs text-indigo-900/40 uppercase tracking-widest font-bold mb-1 text-sharp">{t("hourly_rate")}</p>
-                      <p className="text-xl font-bold text-primary">${talent.hourly_rate || '45'}<span className="text-sm font-medium text-indigo-900/40 text-sharp">/{t("per_hr")}</span></p>
+                      {talent.hourly_rate && (
+                        <>
+                          <p className="text-xs text-indigo-900/40 uppercase tracking-widest font-bold mb-1 text-sharp">{t("hourly_rate")}</p>
+                          <p className="text-xl font-bold text-primary">${talent.hourly_rate}<span className="text-sm font-medium text-indigo-900/40 text-sharp">/{t("per_hr")}</span></p>
+                        </>
+                      )}
                     </div>
                     <Button 
                       variant="ghost" 

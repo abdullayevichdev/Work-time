@@ -46,6 +46,8 @@ export function ProfilePage() {
   const [editedPhone, setEditedPhone] = useState('');
   const [editedRole, setEditedRole] = useState<'freelancer' | 'client' | 'admin'>('freelancer');
   const [editedExperience, setEditedExperience] = useState<any[]>([]);
+  const [editedRating, setEditedRating] = useState('4.9');
+  const [editedJobs, setEditedJobs] = useState('12');
   const [isRequesting, setIsRequesting] = useState(false);
   const [hasRequestSent, setHasRequestSent] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -100,7 +102,7 @@ export function ProfilePage() {
             setEditedTitle(data.title || t('prof_creator'));
             setEditedBio(data.bio || '');
             setEditedSkills(data.skills?.join(', ') || '');
-            setEditedRate(data.hourly_rate || '45');
+            setEditedRate(data.hourly_rate || '');
             setEditedLocation(data.location || t('uzbekistan'));
             setEditedGithub(data.socials?.github || '');
             setEditedTwitter(data.socials?.twitter || '');
@@ -110,6 +112,8 @@ export function ProfilePage() {
             setEditedExperience(data.experience || [
               { company: 'Company Name', role: 'Role Name', period: '2022 - Present', desc: 'Description here...' }
             ]);
+            setEditedRating(data.stats?.rating?.toString() || '4.9');
+            setEditedJobs(data.stats?.completed_jobs?.toString() || '12');
           }
 
           // Check if request already sent
@@ -165,6 +169,11 @@ export function ProfilePage() {
         location: editedLocation,
         role: editedRole,
         experience: editedExperience,
+        stats: {
+          ...(profile?.stats || {}),
+          rating: parseFloat(editedRating) || 5.0,
+          completed_jobs: parseInt(editedJobs) || 0
+        },
         socials: {
           github: editedGithub || '',
           twitter: editedTwitter || '',
@@ -473,13 +482,13 @@ export function ProfilePage() {
                   <div className="flex justify-center gap-2 mt-2 flex-wrap px-2">
                     <button
                       onClick={() => setEditedRole('freelancer')}
-                      className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all ${editedRole === 'freelancer' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'bg-indigo-900/5 text-indigo-900/30'}`}
+                      className={`px-4 py-1.5 rounded-full text-[11px] font-bold transition-all ${editedRole === 'freelancer' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'bg-indigo-900/10 text-indigo-900/60 hover:bg-indigo-900/20'}`}
                     >
                       {t('freelancer_role').toUpperCase()}
                     </button>
                     <button
                       onClick={() => setEditedRole('client')}
-                      className={`px-3 py-1 rounded-full text-[10px] font-bold transition-all ${editedRole === 'client' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'bg-indigo-900/5 text-indigo-900/30'}`}
+                      className={`px-4 py-1.5 rounded-full text-[11px] font-bold transition-all ${editedRole === 'client' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'bg-indigo-900/10 text-indigo-900/60 hover:bg-indigo-900/20'}`}
                     >
                       {t('hire_role').toUpperCase()}
                     </button>
@@ -499,30 +508,48 @@ export function ProfilePage() {
                 </div>
               )}
 
-              <div className="grid grid-cols-3 gap-2 sm:gap-4 py-4 sm:py-6 border-y border-indigo-900/5 my-6 leading-none">
+              <div className={`grid ${(!isEditing && !profile?.hourly_rate) ? 'grid-cols-2' : 'grid-cols-3'} gap-2 sm:gap-4 py-4 sm:py-6 border-y border-indigo-900/5 my-6 leading-none`}>
                 <div>
-                  <p className="text-lg sm:text-xl font-bold text-indigo-950 text-sharp">4.9</p>
+                  {isEditing ? (
+                    <Input 
+                      value={editedRating} 
+                      onChange={(e) => setEditedRating(e.target.value)}
+                      className="bg-transparent border-none p-0 w-16 mx-auto h-auto font-bold text-center text-lg sm:text-xl text-indigo-950"
+                    />
+                  ) : (
+                    <p className="text-lg sm:text-xl font-bold text-indigo-950 text-sharp">{profile?.stats?.rating || '4.9'}</p>
+                  )}
                   <p className="text-[9px] sm:text-[10px] text-indigo-900/40 uppercase tracking-tighter text-sharp">{t('rating')}</p>
                 </div>
                 <div>
-                  <p className="text-lg sm:text-xl font-bold text-indigo-950 text-sharp">12</p>
+                  {isEditing ? (
+                    <Input 
+                      value={editedJobs} 
+                      onChange={(e) => setEditedJobs(e.target.value)}
+                      className="bg-transparent border-none p-0 w-16 mx-auto h-auto font-bold text-center text-lg sm:text-xl text-indigo-950"
+                    />
+                  ) : (
+                    <p className="text-lg sm:text-xl font-bold text-indigo-950 text-sharp">{profile?.stats?.completed_jobs || '12'}</p>
+                  )}
                   <p className="text-[9px] sm:text-[10px] text-indigo-900/40 uppercase tracking-tighter text-sharp">{t('profile_jobs')}</p>
                 </div>
-                <div>
-                  {isEditing ? (
-                    <div className="flex items-center justify-center gap-1">
-                      <span className="text-xs sm:text-sm text-indigo-900/40">$</span>
-                      <Input 
-                        value={editedRate} 
-                        onChange={(e) => setEditedRate(e.target.value)}
-                        className="bg-transparent border-none p-0 w-8 h-auto font-bold text-center text-lg sm:text-xl text-indigo-950"
-                      />
-                    </div>
-                  ) : (
-                    <p className="text-lg sm:text-xl font-bold text-indigo-950 text-sharp">${profile?.hourly_rate || '45'}</p>
-                  )}
-                  <p className="text-[9px] sm:text-[10px] text-indigo-900/40 uppercase tracking-tighter text-sharp">{t('rate_h')}</p>
-                </div>
+                {(isEditing || profile?.hourly_rate) && (
+                  <div>
+                    {isEditing ? (
+                      <div className="flex items-center justify-center gap-1">
+                        <span className="text-xs sm:text-sm text-indigo-900/40">$</span>
+                        <Input 
+                          value={editedRate} 
+                          onChange={(e) => setEditedRate(e.target.value)}
+                          className="bg-transparent border-none p-0 w-8 h-auto font-bold text-center text-lg sm:text-xl text-indigo-950"
+                        />
+                      </div>
+                    ) : (
+                      <p className="text-lg sm:text-xl font-bold text-indigo-950 text-sharp">${profile?.hourly_rate}</p>
+                    )}
+                    <p className="text-[9px] sm:text-[10px] text-indigo-900/40 uppercase tracking-tighter text-sharp">{t('rate_h')}</p>
+                  </div>
+                )}
               </div>
 
               <div className="flex gap-3">
