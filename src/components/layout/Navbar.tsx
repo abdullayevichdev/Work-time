@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   Menu, X, User, LogOut, MessageSquare, 
   Bell, Briefcase, LayoutDashboard, Globe, ChevronDown,
-  Users, Shield, Trash2, CheckCircle
+  Users, Shield, Trash2, CheckCircle,
+  Instagram, Youtube
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -371,7 +372,53 @@ export function Navbar() {
                 </div>
               )}
             </div>
-        </motion.div>
+            
+            <div className="flex items-center justify-center gap-6 pt-6 border-t border-indigo-900/5">
+              {[
+                { 
+                  icon: Instagram, 
+                  href: "https://www.instagram.com/wentriccompany/",
+                  color: "text-[#E4405F]"
+                },
+                { 
+                  icon: () => (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                      <path d="m22 2-7 20-4-9-9-4Z" />
+                      <path d="M22 2 11 13" />
+                    </svg>
+                  ), 
+                  href: "https://t.me/wentricCompany",
+                  color: "text-[#24A1DE]"
+                },
+                { 
+                  icon: Youtube, 
+                  href: "https://www.youtube.com/@Wentric",
+                  color: "text-[#FF0000]"
+                },
+                { 
+                  icon: () => (
+                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                      <path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z" />
+                    </svg>
+                  ), 
+                  href: "https://x.com/WentricCompany",
+                  color: "text-indigo-950"
+                }
+              ].map((social, i) => (
+                <motion.a 
+                  key={i}
+                  href={social.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  whileHover={{ scale: 1.2, rotate: 5 }}
+                  whileTap={{ scale: 0.9 }}
+                  className={`w-10 h-10 rounded-full liquid-glass border-white/60 bg-white/40 flex items-center justify-center ${social.color} shadow-sm transition-colors`}
+                >
+                  <social.icon />
+                </motion.a>
+              ))}
+            </div>
+          </motion.div>
         )}
       </AnimatePresence>
     </nav>

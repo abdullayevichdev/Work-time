@@ -759,7 +759,7 @@ export function ProfilePage() {
                         <div className="absolute top-12 bottom-[-32px] left-1/2 -translate-x-1/2 w-px bg-indigo-900/5" />
                       )}
                     </div>
-                    <div className="space-y-2 flex-1">
+                    <div className="space-y-2 flex-1 min-w-0">
                       {isEditing ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white/5 p-4 rounded-xl relative">
                           <button 
@@ -795,8 +795,8 @@ export function ProfilePage() {
                         </div>
                       ) : (
                         <>
-                          <h4 className="font-bold text-lg text-indigo-950 text-sharp truncate">{exp.role}</h4>
-                          <p className="text-primary text-sm font-black uppercase tracking-widest shadow-sm truncate">{exp.company} • {exp.period}</p>
+                          <h4 className="font-bold text-lg text-indigo-950 text-sharp break-words">{exp.role}</h4>
+                          <p className="text-primary text-sm font-black uppercase tracking-widest shadow-sm break-words">{exp.company} • {exp.period}</p>
                           <p className="text-indigo-950/60 text-sm max-w-xl font-bold text-sharp whitespace-pre-wrap">{exp.desc}</p>
                         </>
                       )}

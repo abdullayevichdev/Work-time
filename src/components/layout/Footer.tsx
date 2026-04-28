@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { Github, Twitter, Linkedin, Mail, Heart } from 'lucide-react';
+import { Instagram, Youtube, Mail, Heart } from 'lucide-react';
+import { motion } from 'motion/react';
 
 export function Footer() {
   const { t } = useTranslation();
@@ -17,15 +18,49 @@ export function Footer() {
               {t("footer_desc")}
             </p>
             <div className="flex gap-4">
-              <a href="#" className="p-2.5 rounded-xl liquid-glass border-indigo-900/5 text-indigo-900/40 hover:text-primary transition-colors">
-                <Twitter className="w-5 h-5" />
-              </a>
-              <a href="#" className="p-2.5 rounded-xl liquid-glass border-indigo-900/5 text-indigo-900/40 hover:text-primary transition-colors">
-                <Github className="w-5 h-5" />
-              </a>
-              <a href="#" className="p-2.5 rounded-xl liquid-glass border-indigo-900/5 text-indigo-900/40 hover:text-primary transition-colors">
-                <Linkedin className="w-5 h-5" />
-              </a>
+              {[
+                { 
+                  icon: Instagram, 
+                  href: "https://www.instagram.com/wentriccompany/",
+                  color: "hover:text-[#E4405F]"
+                },
+                { 
+                  icon: () => (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                      <path d="m22 2-7 20-4-9-9-4Z" />
+                      <path d="M22 2 11 13" />
+                    </svg>
+                  ), 
+                  href: "https://t.me/wentricCompany",
+                  color: "hover:text-[#24A1DE]"
+                },
+                { 
+                  icon: Youtube, 
+                  href: "https://www.youtube.com/@Wentric",
+                  color: "hover:text-[#FF0000]"
+                },
+                { 
+                  icon: () => (
+                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                      <path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z" />
+                    </svg>
+                  ), 
+                  href: "https://x.com/WentricCompany",
+                  color: "hover:text-black"
+                }
+              ].map((social, i) => (
+                <motion.a 
+                  key={i}
+                  href={social.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  whileHover={{ y: -5, scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  className={`p-2.5 rounded-xl liquid-glass border-indigo-900/5 text-indigo-900/40 ${social.color} transition-colors shadow-sm`}
+                >
+                  <social.icon />
+                </motion.a>
+              ))}
             </div>
           </div>
 

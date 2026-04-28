@@ -142,14 +142,14 @@ export function Hero() {
 
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4 md:gap-6 mt-12 md:mt-16">
                 <div className="relative group w-full sm:w-auto">
-                  <div className="absolute -inset-1 bg-gradient-to-r from-primary via-indigo-500 to-cyan-500 rounded-full blur-md opacity-40 group-hover:opacity-70 transition duration-500"></div>
+                  <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full blur-lg opacity-30 group-hover:opacity-50 transition duration-500"></div>
                   <Button
                     size="lg"
-                    className="relative w-full sm:w-auto h-12 md:h-16 px-8 md:px-12 text-sm md:text-lg bg-gradient-to-r from-indigo-600 via-primary to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white rounded-full shadow-[0_0_40px_rgba(139,92,246,0.3)] border border-white/20 transition-all duration-300 hover:scale-105 active:scale-95 font-bold uppercase tracking-[0.15em] overflow-hidden"
+                    className="relative w-full sm:w-auto h-12 md:h-16 px-8 md:px-12 text-sm md:text-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-full shadow-[0_10px_40px_rgba(79,70,229,0.3)] border border-white/20 transition-all duration-300 hover:scale-105 active:scale-95 font-bold uppercase tracking-[0.1em] overflow-hidden"
                     nativeButton={false}
                     render={
                       <Link to="/signup" className="flex items-center justify-center gap-3 w-full h-full">
-                        <span className="relative z-10">{t("get_started")}</span>
+                        <span className="relative z-10 drop-shadow-md">{t("get_started")}</span>
                         <ArrowRight className="w-4 h-4 md:w-5 md:h-5 group-hover:translate-x-1 transition-transform relative z-10" />
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] skew-x-12" />
                       </Link>
@@ -160,7 +160,7 @@ export function Hero() {
                 <Button
                   size="lg"
                   variant="outline"
-                  className="w-full sm:w-auto h-12 md:h-16 px-8 md:px-12 text-sm md:text-lg bg-white/30 backdrop-blur-xl border border-white/60 hover:bg-white/50 text-indigo-950 rounded-full shadow-[0_8px_32px_rgba(0,0,0,0.05)] transition-all duration-300 hover:scale-105 active:scale-95 font-bold uppercase tracking-[0.15em] flex items-center justify-center"
+                  className="w-full sm:w-auto h-12 md:h-16 px-8 md:px-12 text-sm md:text-lg bg-white/70 hover:bg-white backdrop-blur-xl border border-white/80 text-indigo-950 rounded-full shadow-[0_10px_40px_rgba(0,0,0,0.05)] transition-all duration-300 hover:scale-105 active:scale-95 font-bold uppercase tracking-[0.1em] flex items-center justify-center"
                   nativeButton={false}
                   render={<Link to="/jobs" className="w-full h-full flex items-center justify-center">{t("explore_jobs")}</Link>}
                 />

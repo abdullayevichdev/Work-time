@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Send, Search, User, ShieldCheck, HelpCircle } from 'lucide-react';
+import { Send, Search, User, ShieldCheck, HelpCircle, ArrowLeft } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { ADMIN_USERS } from '@/constants';
 
@@ -263,7 +263,7 @@ export function MessagesPage() {
     <div className="pt-32 pb-20 container mx-auto px-6 h-[calc(100vh-80px)]">
       <div className="glass border-white/10 rounded-3xl overflow-hidden flex h-full">
         {/* Sidebar */}
-        <div className="w-full md:w-80 border-r border-white/10 flex flex-col">
+        <div className={`${selectedChat ? 'hidden md:flex' : 'flex'} w-full md:w-80 border-r border-white/10 flex-col`}>
           <div className="p-6 border-b border-white/10 space-y-4">
             <h2 className="text-xl font-bold">{t("messages_title")}</h2>
             
@@ -313,10 +313,18 @@ export function MessagesPage() {
         </div>
 
         {/* Chat Area */}
-        <div className="hidden md:flex flex-1 flex-col">
+        <div className={`${!selectedChat ? 'hidden md:flex' : 'flex'} flex-1 flex-col`}>
           {selectedChat ? (
             <>
               <div className="p-4 border-b border-white/10 flex items-center gap-4 bg-white/5">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => setSelectedChat(null)}
+                  className="md:hidden mr-1"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </Button>
                 <Avatar className="w-10 h-10 border border-white/10">
                   <AvatarImage src={selectedChat.avatar || undefined} />
                   <AvatarFallback><User className="w-4 h-4" /></AvatarFallback>
