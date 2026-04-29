@@ -271,6 +271,11 @@ const resources = {
       "error_upload_image": "Error uploading image",
       "loading_profile": "Loading profile...",
       "user_not_found": "User not found",
+      "delete_account": "Delete Account",
+      "delete_account_confirm": "Are you sure you want to delete your account? This action is permanent and cannot be undone.",
+      "delete_account_success": "Your account has been successfully deleted.",
+      "delete_account_error": "Failed to delete account. You may need to log out and log in again to perform this sensitive action.",
+
 
       // Job Modal & Apply
       "fill_details_talent": "Fill in the details to find your perfect talent.",
@@ -511,6 +516,11 @@ const resources = {
       "error_upload_image": "Rasmni yuklashda xatolik yuz berdi",
       "loading_profile": "Profil yuklanmoqda...",
       "user_not_found": "Foydalanuvchi topilmadi",
+      "delete_account": "Akkauntni o'chirish",
+      "delete_account_confirm": "Akkauntingizni o'chirishga ishonchingiz komilmi? Bu amalni ortga qaytarib bo'lmaydi va barcha ma'lumotlaringiz o'chib ketadi.",
+      "delete_account_success": "Akkauntingiz muvaffaqiyatli o'chirildi.",
+      "delete_account_error": "Akkauntni o'chirishda xatolik yuz berdi. Bu nozik amal bo'lgani uchun tizimdan chiqib, qayta kirishingiz kerak bo'lishi mumkin.",
+
 
       // Job Modal & Apply
       "fill_details_talent": "Ideal iste'dodni topish uchun tafsilotlarni to'ldiring.",
@@ -941,6 +951,11 @@ const resources = {
       "error_upload_image": "Ошибка загрузки изображения",
       "loading_profile": "Загрузка профиля...",
       "user_not_found": "Пользователь не найден",
+      "delete_account": "Удалить аккаунт",
+      "delete_account_confirm": "Вы уверены, что хотите удалить свой аккаунт? Это действие необратимо, и все ваши данные будут удалены.",
+      "delete_account_success": "Ваш аккаунт успешно удален.",
+      "delete_account_error": "Не удалось удалить аккаунт. Поскольку это важное действие, вам может потребоваться выйти и снова войти в систему.",
+
 
       // Job Modal & Apply
       "fill_details_talent": "Заполните детали, чтобы найти идеального таланта.",

@@ -68,6 +68,7 @@ export function JobsPage() {
   }, []);
 
   const filteredUsers = usersList.filter(u => 
+    !u.isDeleted &&
     (selectedRole === null || u.role === selectedRole) &&
     ((u.full_name?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
     (u.title?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||

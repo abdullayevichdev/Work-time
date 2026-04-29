@@ -96,6 +96,8 @@ export function AuthPage({ mode }: AuthPageProps) {
         toast.success(t('welcome_profile'));
         handleSuccess('/profile');
         return;
+      } else if (userDoc.data()?.isDeleted) {
+        await setDoc(doc(db, 'users', user.uid), { isDeleted: false }, { merge: true });
       }
 
       toast.success(t('google_success'));
@@ -166,7 +168,15 @@ export function AuthPage({ mode }: AuthPageProps) {
         toast.success(t('signup_success'));
         handleSuccess('/profile');
       } else {
-        await signInWithEmailAndPassword(auth, email, password);
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+        
+        // Auto-reactivate if previously "deleted"
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists() && userDoc.data().isDeleted) {
+          await setDoc(doc(db, 'users', user.uid), { isDeleted: false }, { merge: true });
+        }
+
         toast.success(t('login_success'));
         handleSuccess('/dashboard');
       }

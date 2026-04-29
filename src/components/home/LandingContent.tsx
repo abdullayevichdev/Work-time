@@ -11,7 +11,7 @@ import {
 import { MarketPulse } from './MarketPulse';
 import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, collection, query, orderBy, limit } from 'firebase/firestore';
 import { ADMIN_USERS } from '@/constants';
 import React from 'react';
 
@@ -31,6 +31,26 @@ const staggerContainer = {
 export function LandingContent() {
   const { t } = useTranslation();
   const [isPremium, setIsPremium] = React.useState(false);
+  const [liveMessages, setLiveMessages] = React.useState<any[]>([]);
+
+  React.useEffect(() => {
+    const q = query(
+      collection(db, 'messages'),
+      orderBy('created_at', 'desc'),
+      limit(15)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const msgs = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setLiveMessages(msgs);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
 
   React.useEffect(() => {
     const unsubAuth = onAuthStateChanged(auth, (user) => {
@@ -167,22 +187,28 @@ export function LandingContent() {
       {/* Testimonials - Infinite Marquee */}
       <section className="overflow-hidden py-12 md:py-20 bg-primary/5 border-y border-indigo-900/5">
         <div className="flex flex-nowrap gap-6 md:gap-12 animate-scroll whitespace-nowrap px-6">
-          {[
-            { name: "Alex Rivera", role: t("role_designer"), text: t("test_1") },
-            { name: "Sarah Chen", role: t("role_cto"), text: t("test_2") },
-            { name: "Mike Johnson", role: t("role_architect"), text: t("test_3") },
-            { name: "Alex Rivera", role: t("role_designer"), text: t("test_1") },
-            { name: "Sarah Chen", role: t("role_cto"), text: t("test_2") },
-          ].map((t, i) => (
+          {(liveMessages.length > 0 ? (liveMessages.length < 5 ? [...liveMessages, ...liveMessages, ...liveMessages] : [...liveMessages, ...liveMessages]) : [
+            { sender_name: "Alex Rivera", text: t("test_1"), sender_avatar: "" },
+            { sender_name: "Sarah Chen", text: t("test_2"), sender_avatar: "" },
+            { sender_name: "Mike Johnson", text: t("test_3"), sender_avatar: "" }
+          ]).map((m: any, i) => (
             <div key={i} className="inline-block liquid-glass border-white/60 bg-white/40 p-6 md:p-10 rounded-2xl md:rounded-[2.5rem] min-w-[300px] md:min-w-[450px]">
               <div className="flex items-center gap-4 md:gap-6 mb-6 md:mb-8">
-                <div className="w-10 h-10 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-primary to-blue-500" />
+                {m.sender_avatar ? (
+                  <img src={m.sender_avatar} alt={m.sender_name} className="w-10 h-10 md:w-14 md:h-14 rounded-full object-cover border-2 border-primary/20" />
+                ) : (
+                  <div className="w-10 h-10 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-primary to-blue-500 flex items-center justify-center text-white font-bold text-xl">
+                    {m.sender_name?.charAt(0) || 'U'}
+                  </div>
+                )}
                 <div className="text-left">
-                  <h4 className="font-bold text-base md:text-lg text-indigo-950 text-sharp">{t.name}</h4>
-                  <p className="text-[10px] text-indigo-900/30 tracking-widest uppercase font-bold text-sharp">{t.role}</p>
+                  <h4 className="font-bold text-base md:text-lg text-indigo-950 text-sharp">{m.sender_name}</h4>
+                  <p className="text-[10px] text-indigo-900/30 tracking-widest uppercase font-bold text-sharp">
+                    {m.created_at ? new Date(m.created_at).toLocaleDateString() : t("role_member")}
+                  </p>
                 </div>
               </div>
-              <p className="text-indigo-950/60 text-base md:text-lg font-medium whitespace-normal leading-relaxed text-sharp">"{t.text}"</p>
+              <p className="text-indigo-950/60 text-base md:text-lg font-medium whitespace-normal leading-relaxed text-sharp">"{m.text}"</p>
             </div>
           ))}
         </div>

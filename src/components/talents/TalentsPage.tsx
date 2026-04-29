@@ -36,8 +36,10 @@ export function TalentsPage() {
   }, []);
 
   const filteredTalents = talents.filter(talent => 
-    talent.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    talent.skills?.some((s: string) => s.toLowerCase().includes(searchQuery.toLowerCase()))
+    !talent.isDeleted && (
+      talent.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      talent.skills?.some((s: string) => s.toLowerCase().includes(searchQuery.toLowerCase()))
+    )
   );
 
   return (

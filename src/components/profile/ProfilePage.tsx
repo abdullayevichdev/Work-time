@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { auth, db } from '@/lib/firebase';
-import { onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc, setDoc, getDocFromServer, updateDoc } from 'firebase/firestore';
 import { toast } from 'sonner';
 import { handleFirestoreError, OperationType } from '@/lib/firestore-errors';
@@ -355,7 +355,37 @@ export function ProfilePage() {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    if (!user) return;
+    
+    const confirmDelete = window.confirm(t('delete_account_confirm'));
+    if (!confirmDelete) return;
+
+    try {
+      // Soft delete: Mark as deleted in Firestore and sign out
+      // This hides the user from the site but keeps data in Firebase 
+      // and allows the user to log in again with the same credentials.
+      await updateDoc(doc(db, 'users', user.uid), {
+        isDeleted: true,
+        deletedAt: new Date().toISOString()
+      });
+      
+      await signOut(auth);
+      
+      toast.success(t('delete_account_success'));
+      navigate('/');
+    } catch (error: any) {
+      console.error('Delete Account Error:', error);
+      if (error.code === 'auth/requires-recent-login') {
+        toast.error(t('delete_account_error'));
+      } else {
+        toast.error(t('error_generic'));
+      }
+    }
+  };
+
   if (!isOwnProfile && !isVisitorComplete && !loading && user) {
+
     return (
       <div className="pt-24 min-h-[70vh] flex items-center justify-center container mx-auto px-6">
         <Card className="glass max-w-md w-full p-8 text-center border-white/10 relative overflow-hidden">
@@ -655,7 +685,31 @@ export function ProfilePage() {
                 </div>
               </div>
             </motion.div>
+
+            {isOwnProfile && (
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="glass p-8 rounded-[32px] border-red-500/10 shadow-xl bg-red-500/5"
+              >
+                <h3 className="font-bold mb-4 flex items-center text-red-600 uppercase tracking-widest text-xs">
+                  DANGER ZONE
+                </h3>
+                <p className="text-[10px] text-red-600/60 font-bold mb-6 leading-relaxed">
+                  {t('delete_account_confirm')}
+                </p>
+                <Button 
+                  onClick={handleDeleteAccount}
+                  variant="destructive"
+                  className="w-full bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl h-11"
+                >
+                  {t('delete_account')}
+                </Button>
+              </motion.div>
+            )}
           </div>
+
 
           {/* Right Column: Detailed Info */}
           <div className="lg:col-span-8 space-y-8">
