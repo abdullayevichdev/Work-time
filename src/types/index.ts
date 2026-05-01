@@ -1,5 +1,13 @@
 export type UserRole = 'freelancer' | 'client' | 'admin';
 
+export interface PortfolioItem {
+  id: string;
+  title: string;
+  description: string;
+  image_url: string;
+  project_url?: string;
+}
+
 export interface UserProfile {
   id: string;
   email: string;
@@ -22,6 +30,7 @@ export interface UserProfile {
     completed_jobs: number;
     total_earned: number;
   };
+  portfolio?: PortfolioItem[];
   is_premium: boolean;
   is_admin?: boolean;
   created_at: string;
@@ -47,6 +56,19 @@ export interface Notification {
   created_at: string;
 }
 
+export interface Review {
+  id: string;
+  job_id: string;
+  job_title: string;
+  from_user_id: string;
+  from_user_name: string;
+  from_user_avatar?: string;
+  to_user_id: string;
+  rating: number;
+  comment: string;
+  created_at: string;
+}
+
 export interface Job {
   id: string;
   title: string;
@@ -59,7 +81,9 @@ export interface Job {
   client_id: string;
   client_name: string;
   client_avatar?: string;
-  status: 'open' | 'closed';
+  status: 'open' | 'closed' | 'completed';
+  hired_freelancer_id?: string;
+  hired_freelancer_name?: string;
   created_at: string;
   is_featured: boolean;
 }

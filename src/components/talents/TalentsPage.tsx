@@ -16,6 +16,8 @@ export function TalentsPage() {
   const [talents, setTalents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [rateRange, setRateRange] = useState<[number, number]>([0, 500]);
+  const [selectedLevels, setSelectedLevels] = useState<string[]>([]);
 
   useEffect(() => {
     const q = query(collection(db, 'users'), where('role', '==', 'freelancer'));
@@ -39,7 +41,9 @@ export function TalentsPage() {
     !talent.isDeleted && (
       talent.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       talent.skills?.some((s: string) => s.toLowerCase().includes(searchQuery.toLowerCase()))
-    )
+    ) &&
+    (talent.hourly_rate >= rateRange[0] && talent.hourly_rate <= rateRange[1]) &&
+    (selectedLevels.length === 0 || selectedLevels.includes(talent.experience_level || 'intermediate'))
   );
 
   return (
@@ -49,107 +53,165 @@ export function TalentsPage() {
           <h1 className="text-4xl md:text-5xl font-display font-bold mb-4 text-indigo-950 text-sharp">{t("talents_title_1")} <span className="text-primary">{t("talents_title_2")}</span></h1>
           <p className="text-indigo-900/40 max-w-xl text-sharp font-medium">{t("talents_desc")}</p>
         </div>
-        
-        <div className="w-full md:w-auto flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1 sm:w-80">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
-            <Input 
-              placeholder={t("search_talents_placeholder")} 
-              className="pl-10 bg-white/5 border-white/10 focus:border-primary"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+      </div>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 mb-12">
+        {/* Sidebar Filters */}
+        <div className="hidden lg:block space-y-6">
+          <Card className="glass border-white/10 p-6">
+            <h3 className="text-sm font-bold uppercase tracking-widest text-indigo-900/40 mb-6">{t('hourly_rate')}</h3>
+            <div className="space-y-4">
+              <div className="flex justify-between text-[10px] font-black text-indigo-900/20 uppercase tracking-[0.2em]">
+                <span>$0</span>
+                <span>$500+</span>
+              </div>
+              <input 
+                type="range" 
+                min="0" 
+                max="500" 
+                step="10"
+                value={rateRange[1]}
+                onChange={(e) => setRateRange([rateRange[0], parseInt(e.target.value)])}
+                className="w-full accent-primary bg-indigo-900/10 rounded-lg h-1 appearance-none cursor-pointer"
+              />
+              <p className="text-sm font-bold text-indigo-950">
+                Up to ${rateRange[1]}/hr
+              </p>
+            </div>
+          </Card>
+
+          <Card className="glass border-white/10 p-6">
+            <h3 className="text-sm font-bold uppercase tracking-widest text-indigo-900/40 mb-6">{t('exp_level')}</h3>
+            <div className="space-y-3">
+              {[
+                { label: t('entry_level'), id: 'entry' },
+                { label: t('intermediate'), id: 'intermediate' },
+                { label: t('expert'), id: 'expert' }
+              ].map(level => (
+                <label key={level.id} className="flex items-center gap-3 cursor-pointer group">
+                  <input 
+                    type="checkbox" 
+                    checked={selectedLevels.includes(level.id)}
+                    onChange={() => {
+                      setSelectedLevels(prev => 
+                        prev.includes(level.id) ? prev.filter(l => l !== level.id) : [...prev, level.id]
+                      );
+                    }}
+                    className="w-4 h-4 rounded border-indigo-900/10 text-primary focus:ring-primary/20 accent-primary"
+                  />
+                  <span className={`text-xs font-bold uppercase tracking-widest transition-colors ${selectedLevels.includes(level.id) ? 'text-primary' : 'text-indigo-900/40 group-hover:text-primary'}`}>
+                    {level.label}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </Card>
+        </div>
+
+        <div className="lg:col-span-3">
+          <div className="flex flex-col sm:flex-row gap-4 mb-8">
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-indigo-900/20" />
+              <Input 
+                placeholder={t("search_talents_placeholder")} 
+                className="pl-12 h-14 glass border-white/10 focus:border-primary rounded-2xl"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <Button variant="outline" className="h-14 px-8 glass border-white/10 hover:bg-white/10 rounded-2xl md:hidden">
+              <Filter className="w-4 h-4 mr-2" /> {t("filter")}
+            </Button>
           </div>
-          <Button variant="outline" className="glass border-white/10 hover:bg-white/10">
-            <Filter className="w-4 h-4 mr-2" /> {t("filter")}
-          </Button>
+
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {[1, 2, 4].map(i => (
+                <div key={i} className="h-80 glass rounded-[2.5rem] animate-pulse" />
+              ))}
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {filteredTalents.map((talent, i) => (
+                  <motion.div
+                    key={talent.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.1 }}
+                  >
+                    <Card className="glass border-white/10 hover:border-primary/50 transition-all group h-full flex flex-col">
+                      <CardContent className="p-8 flex flex-col h-full">
+                        <div className="flex items-start justify-between mb-6">
+                          <Avatar className="w-20 h-20 border-2 border-primary/20 p-1 bg-white/5">
+                            <AvatarImage src={talent.photo_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${talent.id}`} />
+                            <AvatarFallback className="bg-primary/20 text-primary text-2xl font-bold">
+                              {talent.full_name?.[0] || talent.email?.[0]}
+                            </AvatarFallback>
+                          </Avatar>
+                          {talent.is_verified && (
+                            <CheckCircle2 className="w-6 h-6 text-blue-500 fill-blue-500/10" title="Verified Professional" />
+                          )}
+                        </div>
+
+                        <div className="mb-6 flex-1">
+                          <h3 className="text-2xl font-bold mb-1 text-indigo-950 group-hover:text-primary transition-colors text-sharp whitespace-normal break-all">
+                            {talent.full_name || talent.email}
+                          </h3>
+                          <p className="text-sm text-indigo-900/40 mb-4 flex items-center gap-1 font-medium text-sharp">
+                            <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                            {talent.stats?.rating || '5.0'} • {talent.stats?.completed_jobs || 0} {t("jobs_completed")}
+                          </p>
+                          <p className="text-sm text-indigo-950/60 line-clamp-3 mb-6 text-sharp">
+                            {talent.bio}
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {talent.skills?.slice(0, 4).map((skill: string) => (
+                              <Badge key={skill} variant="secondary" className="bg-white/40 border-indigo-900/10 text-indigo-900/60 text-[10px] uppercase tracking-wider text-sharp font-bold">
+                                {skill}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="pt-6 border-t border-indigo-900/5 flex items-center justify-between">
+                          <div>
+                            {talent.hourly_rate && (
+                              <>
+                                <p className="text-xs text-indigo-900/40 uppercase tracking-widest font-bold mb-1 text-sharp">{t("hourly_rate")}</p>
+                                <p className="text-xl font-bold text-primary">${talent.hourly_rate}<span className="text-sm font-medium text-indigo-900/40 text-sharp">/{t("per_hr")}</span></p>
+                              </>
+                            )}
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            asChild
+                            className="group-hover:translate-x-1 transition-transform" 
+                          >
+                            <Link to={`/profile/${talent.id}`}>
+                              <ArrowRight className="w-5 h-5 text-primary" />
+                            </Link>
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                ))}
+              </div>
+
+              {!loading && filteredTalents.length === 0 && (
+                <div className="text-center py-20 glass rounded-[3rem] border-white/5">
+                  <Users className="w-16 h-16 mx-auto mb-6 text-white/10" />
+                  <h2 className="text-2xl font-bold mb-2">{t("no_talents_found")}</h2>
+                  <p className="text-white/40">{t("adjust_search")}</p>
+                </div>
+              )}
+            </>
+          )}
         </div>
       </div>
-
-      {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="h-80 glass rounded-3xl animate-pulse" />
-          ))}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {filteredTalents.map((talent, i) => (
-            <motion.div
-              key={talent.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
-            >
-              <Card className="glass border-white/10 hover:border-primary/50 transition-all group h-full flex flex-col">
-                <CardContent className="p-8 flex flex-col h-full">
-                  <div className="flex items-start justify-between mb-6">
-                    <Avatar className="w-20 h-20 border-2 border-primary/20 p-1 bg-white/5">
-                      <AvatarImage src={talent.photo_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${talent.id}`} />
-                      <AvatarFallback className="bg-primary/20 text-primary text-2xl font-bold">
-                        {talent.full_name?.[0] || talent.email?.[0]}
-                      </AvatarFallback>
-                    </Avatar>
-                    {talent.is_verified && (
-                      <CheckCircle2 className="w-6 h-6 text-blue-500 fill-blue-500/10" title="Verified Professional" />
-                    )}
-                  </div>
-
-                  <div className="mb-6 flex-1">
-                    <h3 className="text-2xl font-bold mb-1 text-indigo-950 group-hover:text-primary transition-colors text-sharp whitespace-normal break-all">
-                      {talent.full_name || talent.email}
-                    </h3>
-                    <p className="text-sm text-indigo-900/40 mb-4 flex items-center gap-1 font-medium text-sharp">
-                      <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
-                      {talent.stats?.rating || '5.0'} • {talent.stats?.completed_jobs || 0} {t("jobs_completed")}
-                    </p>
-                    <p className="text-sm text-indigo-950/60 line-clamp-3 mb-6 text-sharp">
-                      {talent.bio}
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {talent.skills?.slice(0, 4).map((skill: string) => (
-                        <Badge key={skill} variant="secondary" className="bg-white/40 border-indigo-900/10 text-indigo-900/60 text-[10px] uppercase tracking-wider text-sharp font-bold">
-                          {skill}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="pt-6 border-t border-indigo-900/5 flex items-center justify-between">
-                    <div>
-                      {talent.hourly_rate && (
-                        <>
-                          <p className="text-xs text-indigo-900/40 uppercase tracking-widest font-bold mb-1 text-sharp">{t("hourly_rate")}</p>
-                          <p className="text-xl font-bold text-primary">${talent.hourly_rate}<span className="text-sm font-medium text-indigo-900/40 text-sharp">/{t("per_hr")}</span></p>
-                        </>
-                      )}
-                    </div>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      nativeButton={false}
-                      className="group-hover:translate-x-1 transition-transform" 
-                      render={
-                        <Link to={`/profile/${talent.id}`}>
-                          <ArrowRight className="w-5 h-5 text-primary" />
-                        </Link>
-                      } 
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
-      )}
-
-      {!loading && filteredTalents.length === 0 && (
-        <div className="text-center py-20 glass rounded-[40px] border-white/5">
-          <Users className="w-16 h-16 mx-auto mb-6 text-white/10" />
-          <h2 className="text-2xl font-bold mb-2">{t("no_talents_found")}</h2>
-          <p className="text-white/40">{t("adjust_search")}</p>
-        </div>
-      )}
     </div>
+
   );
 }

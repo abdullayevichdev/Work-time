@@ -19,6 +19,7 @@ import { ApplicationsList } from '@/components/jobs/ApplicationsList';
 import { AdminDashboard } from '@/components/admin/AdminDashboard';
 
 import { WorkRequestsList } from '@/components/dashboard/WorkRequestsList';
+import { ActiveJobsList } from '@/components/dashboard/ActiveJobsList';
 
 import { useNavigate } from 'react-router-dom';
 import { ADMIN_USERS } from '@/constants';
@@ -243,6 +244,14 @@ export function DashboardPage() {
                   {t('work_requests')}
                 </h2>
                 <WorkRequestsList role={profile?.role || 'freelancer'} />
+              </section>
+
+              <section>
+                <h2 className="text-2xl font-display font-bold mb-6 flex items-center gap-2">
+                  <TrendingUp className="w-6 h-6 text-primary" />
+                  {t('active_jobs_title')}
+                </h2>
+                <ActiveJobsList />
               </section>
             </div>
 

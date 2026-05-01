@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Send, Search, User, ShieldCheck, HelpCircle, ArrowLeft } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { ADMIN_USERS } from '@/constants';
+import { sendNotification } from '@/lib/notifications';
 
 export function MessagesPage() {
   const { t } = useTranslation();
@@ -228,6 +229,7 @@ export function MessagesPage() {
           participants: [auth.currentUser.uid, 'platform_support'],
           created_at: new Date().toISOString()
         });
+        // Note: For platform support, we might notify all admins or just leave it for them to check the dashboard
       } else if (isAdmin && selectedChat.isSupportClient) {
         await addDoc(collection(db, 'messages'), {
           sender_id: 'platform_support',
@@ -240,6 +242,12 @@ export function MessagesPage() {
           participants: [selectedChat.actualUserId, 'platform_support'],
           created_at: new Date().toISOString()
         });
+        await sendNotification(
+          selectedChat.actualUserId,
+          t('support_chat_name'),
+          newMessage,
+          'message'
+        );
       } else {
         await addDoc(collection(db, 'messages'), {
           sender_id: auth.currentUser.uid,
@@ -252,6 +260,12 @@ export function MessagesPage() {
           participants: [auth.currentUser.uid, selectedChat.id],
           created_at: new Date().toISOString()
         });
+        await sendNotification(
+          selectedChat.id,
+          auth.currentUser.displayName || 'User',
+          newMessage,
+          'message'
+        );
       }
       setNewMessage('');
     } catch (error) {

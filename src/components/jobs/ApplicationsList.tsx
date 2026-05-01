@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { Clock, Check, X, MessageSquare } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { sendNotification } from '@/lib/notifications';
 
 export function ApplicationsList() {
   const navigate = useNavigate();
@@ -41,12 +42,23 @@ export function ApplicationsList() {
     return () => unsubscribe();
   }, []);
 
-  const handleStatusUpdate = async (appId: string, status: 'accepted' | 'rejected') => {
+  const handleStatusUpdate = async (app: any, status: 'accepted' | 'rejected') => {
     try {
-      await updateDoc(doc(db, 'proposals', appId), { status });
-      setApplications(applications.map(app => 
-        app.id === appId ? { ...app, status } : app
+      await updateDoc(doc(db, 'proposals', app.id), { status });
+      setApplications(applications.map(a => 
+        a.id === app.id ? { ...a, status } : a
       ));
+      
+      // Notify the freelancer
+      await sendNotification(
+        app.freelancer_id,
+        status === 'accepted' ? t('proposal_accepted') : t('proposal_rejected'),
+        status === 'accepted' 
+          ? t('proposal_accepted_desc', { job: app.job_title }) 
+          : t('proposal_rejected_desc', { job: app.job_title }),
+        'application'
+      );
+
       toast.success(t('proposal_status_updated'));
     } catch (error) {
       console.error('Error updating status:', error);
@@ -110,14 +122,14 @@ export function ApplicationsList() {
                         size="sm" 
                         variant="ghost" 
                         className="text-red-400 hover:bg-red-400/10 hover:text-red-400"
-                        onClick={() => handleStatusUpdate(app.id, 'rejected')}
+                        onClick={() => handleStatusUpdate(app, 'rejected')}
                       >
                         <X className="w-4 h-4 mr-1" /> {t('reject')}
                       </Button>
                       <Button 
                         size="sm" 
                         className="bg-green-600 hover:bg-green-500"
-                        onClick={() => handleStatusUpdate(app.id, 'accepted')}
+                        onClick={() => handleStatusUpdate(app, 'accepted')}
                       >
                         <Check className="w-4 h-4 mr-1" /> {t('accept')}
                       </Button>

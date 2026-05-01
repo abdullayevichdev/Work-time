@@ -3,9 +3,8 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'motion/react';
 import { 
-  User, Mail, MapPin, Globe, Github, 
-  Twitter, Linkedin, Edit3, Plus, Star,
-  Award, Briefcase, Camera, X, Check
+  Camera, X, Check, Image as ImageIcon, ExternalLink, Star, MapPin, Loader2,
+  Edit3, Globe, Mail, Github, User, Plus, Instagram, Send, Award
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,16 +12,18 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { 
+  Dialog, DialogContent, DialogHeader, DialogTitle 
+} from '@/components/ui/dialog';
 import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, getDoc, setDoc, getDocFromServer, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, getDocFromServer, updateDoc, collection, query, where, onSnapshot } from 'firebase/firestore';
 import { toast } from 'sonner';
 import { handleFirestoreError, OperationType } from '@/lib/firestore-errors';
 import { ADMIN_USERS } from '@/constants';
 import { calculateProfileCompletion } from '@/lib/profile';
 import { useRef } from 'react';
-import { Loader2 } from 'lucide-react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 
 export function ProfilePage() {
   const { id } = useParams();
@@ -41,16 +42,18 @@ export function ProfilePage() {
   const [editedRate, setEditedRate] = useState('');
   const [editedLocation, setEditedLocation] = useState('');
   const [editedGithub, setEditedGithub] = useState('');
-  const [editedTwitter, setEditedTwitter] = useState('');
-  const [editedLinkedin, setEditedLinkedin] = useState('');
+  const [editedTelegram, setEditedTelegram] = useState('');
+  const [editedInstagram, setEditedInstagram] = useState('');
   const [editedPhone, setEditedPhone] = useState('');
   const [editedRole, setEditedRole] = useState<'freelancer' | 'client' | 'admin'>('freelancer');
   const [editedExperience, setEditedExperience] = useState<any[]>([]);
   const [editedRating, setEditedRating] = useState('4.9');
   const [editedJobs, setEditedJobs] = useState('12');
+  const [editedPortfolio, setEditedPortfolio] = useState<any[]>([]);
   const [isRequesting, setIsRequesting] = useState(false);
   const [hasRequestSent, setHasRequestSent] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [visitorProfile, setVisitorProfile] = useState<any>(null);
@@ -105,8 +108,8 @@ export function ProfilePage() {
             setEditedRate(data.hourly_rate || '');
             setEditedLocation(data.location || t('uzbekistan'));
             setEditedGithub(data.socials?.github || '');
-            setEditedTwitter(data.socials?.twitter || '');
-            setEditedLinkedin(data.socials?.linkedin || '');
+            setEditedTelegram(data.socials?.telegram || '');
+            setEditedInstagram(data.socials?.instagram || '');
             setEditedPhone(data.phone || '');
             setEditedRole(data.role || 'freelancer');
             setEditedExperience(data.experience || [
@@ -114,6 +117,7 @@ export function ProfilePage() {
             ]);
             setEditedRating(data.stats?.rating?.toString() || '4.9');
             setEditedJobs(data.stats?.completed_jobs?.toString() || '12');
+            setEditedPortfolio(data.portfolio || []);
           }
 
           // Check if request already sent
@@ -148,6 +152,9 @@ export function ProfilePage() {
         setProfile(null);
         setLoading(false); // Not logged in and no ID specified
       }
+
+      return () => {
+      };
     });
 
     return () => unsubscribe();
@@ -176,9 +183,10 @@ export function ProfilePage() {
         },
         socials: {
           github: editedGithub || '',
-          twitter: editedTwitter || '',
-          linkedin: editedLinkedin || ''
+          telegram: editedTelegram || '',
+          instagram: editedInstagram || ''
         },
+        portfolio: editedPortfolio,
         phone: editedPhone,
         photo_url: profile?.photo_url || user.photoURL || '',
         is_new_user: false,
@@ -253,6 +261,18 @@ export function ProfilePage() {
 
   const removeExperience = (index: number) => {
     setEditedExperience(editedExperience.filter((_, i) => i !== index));
+  };
+
+  const addPortfolioItem = () => {
+    setEditedPortfolio([...editedPortfolio, { id: Date.now().toString(), title: '', description: '', image_url: '', project_url: '' }]);
+  };
+
+  const updatePortfolioItem = (id: string, field: string, value: string) => {
+    setEditedPortfolio(editedPortfolio.map(item => item.id === id ? { ...item, [field]: value } : item));
+  };
+
+  const removePortfolioItem = (id: string) => {
+    setEditedPortfolio(editedPortfolio.filter(item => item.id !== id));
   };
 
   const formatPhone = (val: string) => {
@@ -352,6 +372,73 @@ export function ProfilePage() {
       toast.error(t('error_upload_image'));
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handlePortfolioImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, id: string) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error(t('error_only_image') || 'Only image files are allowed');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error(t('error_image_size') || 'Image size must be less than 5MB');
+      return;
+    }
+
+    const toastId = toast.loading(t('uploading_image') || 'Uploading image...');
+
+    try {
+      const reader = new FileReader();
+      const optimizePromise = new Promise<string>((resolve, reject) => {
+        reader.onload = (event) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const MAX_SIZE = 800;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > height) {
+              if (width > MAX_SIZE) {
+                height *= MAX_SIZE / width;
+                width = MAX_SIZE;
+              }
+            } else {
+              if (height > MAX_SIZE) {
+                width *= MAX_SIZE / height;
+                height = MAX_SIZE;
+              }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx?.drawImage(img, 0, 0, width, height);
+            
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+            resolve(dataUrl);
+          };
+          img.onerror = reject;
+          img.src = event.target?.result as string;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const optimizedImage = await optimizePromise;
+      
+      updatePortfolioItem(id, 'image_url', optimizedImage);
+      
+      toast.dismiss(toastId);
+      toast.success(t('image_updated') || 'Image updated successfully');
+    } catch (error: any) {
+      console.error('Portfolio image upload error:', error);
+      toast.dismiss(toastId);
+      toast.error(t('error_upload_image') || 'Failed to upload image');
     }
   };
 
@@ -667,19 +754,31 @@ export function ProfilePage() {
                         <Input value={editedGithub} onChange={(e) => setEditedGithub(e.target.value)} placeholder="Github URL" className="bg-white/5 h-8 text-xs text-indigo-950" />
                       </div>
                       <div className="flex items-center gap-3">
-                        <Twitter className="w-4 h-4 text-indigo-900/40" />
-                        <Input value={editedTwitter} onChange={(e) => setEditedTwitter(e.target.value)} placeholder="Twitter URL" className="bg-white/5 h-8 text-xs text-indigo-950" />
+                        <Send className="w-4 h-4 text-indigo-900/40" />
+                        <Input value={editedTelegram} onChange={(e) => setEditedTelegram(e.target.value)} placeholder="Telegram URL" className="bg-white/5 h-8 text-xs text-indigo-950" />
                       </div>
                       <div className="flex items-center gap-3">
-                        <Linkedin className="w-4 h-4 text-indigo-900/40" />
-                        <Input value={editedLinkedin} onChange={(e) => setEditedLinkedin(e.target.value)} placeholder="LinkedIn URL" className="bg-white/5 h-8 text-xs text-indigo-950" />
+                        <Instagram className="w-4 h-4 text-indigo-900/40" />
+                        <Input value={editedInstagram} onChange={(e) => setEditedInstagram(e.target.value)} placeholder="Instagram URL" className="bg-white/5 h-8 text-xs text-indigo-950" />
                       </div>
                     </div>
                   ) : (
                     <>
-                      <motion.a whileHover={{ y: -3 }} href={profile?.socials?.github || '#'} className="text-indigo-900/30 hover:text-primary"><Github className="w-5 h-5" /></motion.a>
-                      <motion.a whileHover={{ y: -3 }} href={profile?.socials?.twitter || '#'} className="text-indigo-900/30 hover:text-primary"><Twitter className="w-5 h-5" /></motion.a>
-                      <motion.a whileHover={{ y: -3 }} href={profile?.socials?.linkedin || '#'} className="text-indigo-900/30 hover:text-primary"><Linkedin className="w-5 h-5" /></motion.a>
+                      {profile?.socials?.github && (
+                        <motion.a whileHover={{ y: -3 }} href={profile.socials.github} target="_blank" rel="noopener noreferrer" className="text-indigo-900/30 hover:text-primary">
+                          <Github className="w-5 h-5" />
+                        </motion.a>
+                      )}
+                      {profile?.socials?.telegram && (
+                        <motion.a whileHover={{ y: -3 }} href={profile.socials.telegram} target="_blank" rel="noopener noreferrer" className="text-indigo-900/30 hover:text-primary">
+                          <Send className="w-5 h-5" />
+                        </motion.a>
+                      )}
+                      {profile?.socials?.instagram && (
+                        <motion.a whileHover={{ y: -3 }} href={profile.socials.instagram} target="_blank" rel="noopener noreferrer" className="text-indigo-900/30 hover:text-primary">
+                          <Instagram className="w-5 h-5" />
+                        </motion.a>
+                      )}
                     </>
                   )}
                 </div>
@@ -782,91 +881,134 @@ export function ProfilePage() {
               )}
             </motion.div>
 
+
+            {/* Portfolio Section */}
             <motion.div 
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
+              transition={{ delay: 0.3 }}
               className="glass p-10 rounded-[40px] border-white/10"
             >
               <div className="flex items-center justify-between mb-8">
-                <h3 className="text-2xl font-bold text-indigo-950 text-sharp">{t('prof_history')}</h3>
+                <h3 className="text-2xl font-bold text-indigo-950 text-sharp">{t('certificates') || 'Certificates'}</h3>
                 <div className="flex gap-2">
                   {isEditing && (
-                    <Button onClick={addExperience} size="sm" variant="ghost" className="h-10 w-10 p-0 rounded-full bg-primary/10 text-primary">
-                      <Plus className="w-5 h-5" />
+                    <Button onClick={addPortfolioItem} size="sm" className="bg-primary/10 text-primary hover:bg-primary/20 rounded-xl px-4 font-bold">
+                      <Plus className="w-4 h-4 mr-2" /> {t('add_certificate') || 'Add Certificate'}
                     </Button>
                   )}
-                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Briefcase className="w-5 h-5 text-primary" />
-                  </div>
                 </div>
               </div>
 
-              <div className="space-y-8">
-                {(isEditing ? editedExperience : profile?.experience || []).map((exp: any, i: number) => (
-                  <div key={i} className="flex gap-6 group relative">
-                    <div className="relative">
-                      <div className="w-12 h-12 rounded-2xl bg-indigo-900/5 flex items-center justify-center border border-indigo-900/5 group-hover:border-primary/50 transition-all z-10 relative">
-                        <Award className="w-6 h-6 text-indigo-900/50 group-hover:text-primary" />
-                      </div>
-                      {i < (isEditing ? editedExperience : profile?.experience || []).length - 1 && (
-                        <div className="absolute top-12 bottom-[-32px] left-1/2 -translate-x-1/2 w-px bg-indigo-900/5" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {(isEditing ? editedPortfolio : profile?.portfolio || []).map((item: any) => (
+                  <div key={item.id} className="group relative glass border-white/10 rounded-3xl overflow-hidden flex flex-col h-full shadow-sm hover:shadow-xl transition-all border-indigo-900/5">
+                    {isEditing && (
+                      <button 
+                        onClick={() => removePortfolioItem(item.id)}
+                        className="absolute top-4 right-4 z-20 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-red-600 transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                    
+                    <div 
+                      className={`aspect-video relative overflow-hidden bg-indigo-900/5 ${!isEditing ? 'cursor-pointer' : ''}`}
+                      onClick={() => !isEditing && item.image_url && setSelectedImageUrl(item.image_url)}
+                    >
+                      {item.image_url ? (
+                        <img src={item.image_url} alt={item.title} className="w-full h-full object-cover transition-transform group-hover:scale-105" />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center text-indigo-900/20">
+                          <ImageIcon className="w-12 h-12" />
+                        </div>
                       )}
                     </div>
-                    <div className="space-y-2 flex-1 min-w-0">
+
+                    <div className="p-6 flex-1 flex flex-col">
                       {isEditing ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white/5 p-4 rounded-xl relative">
-                          <button 
-                            onClick={() => removeExperience(i)}
-                            className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-red-600 transition-colors"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
+                        <div className="space-y-4">
                           <Input 
-                            value={exp.role} 
-                            onChange={(e) => updateExperience(i, 'role', e.target.value)} 
-                            placeholder="Role (e.g. Senior Product Designer)" 
-                            className="bg-transparent border-indigo-900/10 text-indigo-950 font-bold"
-                          />
-                          <Input 
-                            value={exp.company} 
-                            onChange={(e) => updateExperience(i, 'company', e.target.value)} 
-                            placeholder="Company (e.g. Meta Platforms)" 
-                            className="bg-transparent border-indigo-900/10 text-indigo-950 font-bold"
-                          />
-                          <Input 
-                            value={exp.period} 
-                            onChange={(e) => updateExperience(i, 'period', e.target.value)} 
-                            placeholder="Period (e.g. 2022 - Present)" 
-                            className="bg-transparent border-indigo-900/10 text-indigo-950 font-bold"
+                            value={item.title} 
+                            onChange={(e) => updatePortfolioItem(item.id, 'title', e.target.value)} 
+                            placeholder="Certificate Title" 
+                            className="bg-white/40 border-indigo-900/10 text-indigo-950 font-bold"
                           />
                           <Textarea 
-                            value={exp.desc} 
-                            onChange={(e) => updateExperience(i, 'desc', e.target.value)} 
-                            placeholder="Description of your achievements..." 
-                            className="bg-transparent border-indigo-900/10 text-indigo-950 md:col-span-2"
+                            value={item.description} 
+                            onChange={(e) => updatePortfolioItem(item.id, 'description', e.target.value)} 
+                            placeholder="Brief description (optional)..." 
+                            className="bg-white/40 border-indigo-900/10 text-indigo-950 text-sm"
+                          />
+                          <div className="flex gap-2">
+                            <Input 
+                              value={item.image_url} 
+                              onChange={(e) => updatePortfolioItem(item.id, 'image_url', e.target.value)} 
+                              placeholder="Image URL" 
+                              className="bg-white/40 border-indigo-900/10 text-xs text-indigo-950 flex-1"
+                            />
+                            <div className="relative">
+                              <input 
+                                type="file" 
+                                accept="image/*" 
+                                onChange={(e) => handlePortfolioImageUpload(e, item.id)}
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                title="Upload Image"
+                              />
+                              <Button type="button" variant="outline" className="border-indigo-900/10 text-indigo-950 bg-white/40 font-bold px-4">
+                                <Camera className="w-4 h-4 mr-2" /> {t('upload_image') || 'Upload'}
+                              </Button>
+                            </div>
+                          </div>
+                          <Input 
+                            value={item.project_url} 
+                            onChange={(e) => updatePortfolioItem(item.id, 'project_url', e.target.value)} 
+                            placeholder="Project URL (optional)" 
+                            className="bg-white/40 border-indigo-900/10 text-xs text-indigo-950"
                           />
                         </div>
                       ) : (
                         <>
-                          <h4 className="font-bold text-lg text-indigo-950 text-sharp break-words">{exp.role}</h4>
-                          <p className="text-primary text-sm font-black uppercase tracking-widest shadow-sm break-words">{exp.company} • {exp.period}</p>
-                          <p className="text-indigo-950/60 text-sm max-w-xl font-bold text-sharp whitespace-pre-wrap">{exp.desc}</p>
+                          <h4 className="font-bold text-lg text-indigo-950 mb-2">{item.title || "Untitled Project"}</h4>
+                          <p className="text-indigo-950/60 text-sm line-clamp-3 font-medium text-sharp">{item.description || "No description provided."}</p>
                         </>
                       )}
                     </div>
                   </div>
                 ))}
-                {(!isEditing && (!profile?.experience || profile.experience.length === 0)) && (
-                  <div className="text-center py-6 opacity-30">
-                    <p className="text-sm font-bold uppercase tracking-widest">{t('no_activity')}</p>
+                {(!isEditing && (!profile?.portfolio || profile.portfolio.length === 0)) && (
+                  <div className="col-span-full text-center py-12 opacity-30">
+                    <p className="text-sm font-bold uppercase tracking-widest">{t('no_certificates') || 'No certificates added yet.'}</p>
                   </div>
                 )}
               </div>
             </motion.div>
+
           </div>
+
         </div>
       </div>
+
+      {/* Full Image Dialog */}
+      <Dialog open={!!selectedImageUrl} onOpenChange={() => setSelectedImageUrl(null)}>
+        <DialogContent className="max-w-5xl bg-white/90 backdrop-blur-xl border-white/20 p-0 overflow-hidden rounded-[32px]">
+          <div className="relative aspect-auto max-h-[85vh] flex items-center justify-center p-2">
+            {selectedImageUrl && (
+              <img 
+                src={selectedImageUrl} 
+                alt="Full View" 
+                className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl"
+              />
+            )}
+            <button 
+              onClick={() => setSelectedImageUrl(null)}
+              className="absolute top-4 right-4 w-10 h-10 bg-black/20 hover:bg-black/40 text-white rounded-full flex items-center justify-center backdrop-blur-md transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
