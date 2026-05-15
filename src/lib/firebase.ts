@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, getDocFromServer } from 'firebase/firestore';
+import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, getDocFromServer } from 'firebase/firestore';
 // @ts-ignore
 import localConfig from '../../firebase-applet-config.json';
 
@@ -10,26 +10,13 @@ const firebaseConfig = {
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || localConfig.projectId,
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || localConfig.storageBucket,
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || localConfig.messagingSenderId,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || localConfig.appId,
-  firestoreDatabaseId: import.meta.env.VITE_FIREBASE_DATABASE_ID || localConfig.firestoreDatabaseId
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || localConfig.appId
 };
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 
-// Initialize Firestore with forced long-polling to bypass corporate firewalls or iframe blocks
-const dbId = (firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== 'undefined' && firebaseConfig.firestoreDatabaseId !== '') 
-  ? firebaseConfig.firestoreDatabaseId 
-  : '(default)';
-
-console.log("Initializing Firestore with Database ID:", dbId);
-
-export const db = initializeFirestore(app, {
-  experimentalForceLongPolling: true, // Force long polling for maximum compatibility in iframes
-  ignoreUndefinedProperties: true,
-  // @ts-ignore - Some older versions or sub-packages of Firestore SDK still respect this in certain environments
-  useFetchStreams: false, 
-}, dbId);
+export const db = getFirestore(app);
 
 // Test connection with retries and exponential backoff
 const testConnection = async (retries = 5) => {
