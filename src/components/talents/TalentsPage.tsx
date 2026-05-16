@@ -37,14 +37,19 @@ export function TalentsPage() {
     return () => unsubscribe();
   }, []);
 
-  const filteredTalents = talents.filter(talent => 
-    !talent.isDeleted && (
+  const filteredTalents = talents.filter(talent => {
+    const matchSearch = searchQuery === '' || 
       talent.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      talent.skills?.some((s: string) => s.toLowerCase().includes(searchQuery.toLowerCase()))
-    ) &&
-    (talent.hourly_rate >= rateRange[0] && talent.hourly_rate <= rateRange[1]) &&
-    (selectedLevels.length === 0 || selectedLevels.includes(talent.experience_level || 'intermediate'))
-  );
+      talent.skills?.some((s: string) => s.toLowerCase().includes(searchQuery.toLowerCase()));
+
+    const hourlyRate = talent.hourly_rate || 0;
+    const matchRate = hourlyRate >= rateRange[0] && hourlyRate <= rateRange[1];
+
+    const expLevel = talent.experience_level || 'intermediate';
+    const matchLevel = selectedLevels.length === 0 || selectedLevels.includes(expLevel);
+
+    return !talent.isDeleted && matchSearch && matchRate && matchLevel;
+  });
 
   return (
     <div className="pt-32 pb-20 container mx-auto px-6">

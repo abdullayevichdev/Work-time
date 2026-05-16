@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { db, auth } from '@/lib/firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { toast } from 'sonner';
 import { handleFirestoreError, OperationType } from '@/lib/firestore-errors';
 
@@ -26,17 +26,14 @@ export function PostJobModal({ isOpen, onClose, onSuccess }: PostJobModalProps) 
     title: '',
     description: '',
     budget: '',
-    budget_type: 'fixed' as 'fixed' | 'hourly',
-    category: 'Development',
-    experience_level: 'intermediate' as 'entry' | 'intermediate' | 'expert',
-    skills_required: [] as string[]
+    tags: [] as string[]
   });
 
   const addSkill = () => {
-    if (skillInput && !formData.skills_required.includes(skillInput)) {
+    if (skillInput && !formData.tags.includes(skillInput)) {
       setFormData({
         ...formData,
-        skills_required: [...formData.skills_required, skillInput]
+        tags: [...formData.tags, skillInput]
       });
       setSkillInput('');
     }
@@ -45,7 +42,7 @@ export function PostJobModal({ isOpen, onClose, onSuccess }: PostJobModalProps) 
   const removeSkill = (skill: string) => {
     setFormData({
       ...formData,
-      skills_required: formData.skills_required.filter(s => s !== skill)
+      tags: formData.tags.filter(s => s !== skill)
     });
   };
 
@@ -56,11 +53,14 @@ export function PostJobModal({ isOpen, onClose, onSuccess }: PostJobModalProps) 
     setLoading(true);
     try {
       await addDoc(collection(db, 'jobs'), {
-        ...formData,
+        title: formData.title,
+        description: formData.description,
         budget: Number(formData.budget),
-        client_id: auth.currentUser.uid,
+        tags: formData.tags,
+        userId: auth.currentUser.uid,
         status: 'open',
-        created_at: new Date().toISOString()
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
       });
 
       toast.success(t('job_posted_success'));
@@ -119,73 +119,18 @@ export function PostJobModal({ isOpen, onClose, onSuccess }: PostJobModalProps) 
                 </div>
 
                 <div className="space-y-4">
-                  <Label className="text-xs uppercase tracking-widest text-white/50">{t("category")}</Label>
-                  <div className="relative">
-                    <Tag className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary/50" />
-                    <select
-                      className="w-full h-11 md:h-14 pl-12 bg-white/5 border border-white/10 rounded-2xl focus:border-primary outline-none appearance-none"
-                      value={formData.category}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    >
-                      <option value="Development">{t("cat_dev")}</option>
-                      <option value="Design">{t("cat_design")}</option>
-                      <option value="Marketing">{t("cat_marketing")}</option>
-                      <option value="Writing">{t("cat_writing")}</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              {/* Budget & Level */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 p-6 rounded-3xl bg-white/5 border border-white/5">
-                <div className="space-y-4">
-                  <Label className="text-xs uppercase tracking-widest text-white/50">{t("budget_type")}</Label>
-                  <div className="flex gap-2">
-                    <Button 
-                      type="button"
-                      variant={formData.budget_type === 'fixed' ? 'default' : 'ghost'}
-                      className={`flex-1 rounded-xl ${formData.budget_type === 'fixed' ? 'bg-primary' : 'glass border-white/10'}`}
-                      onClick={() => setFormData({ ...formData, budget_type: 'fixed' })}
-                    >
-                      {t("fixed")}
-                    </Button>
-                    <Button 
-                      type="button"
-                      variant={formData.budget_type === 'hourly' ? 'default' : 'ghost'}
-                      className={`flex-1 rounded-xl ${formData.budget_type === 'hourly' ? 'bg-primary' : 'glass border-white/10'}`}
-                      onClick={() => setFormData({ ...formData, budget_type: 'hourly' })}
-                    >
-                      {t("hourly")}
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
                   <Label className="text-xs uppercase tracking-widest text-white/50">{t("budget_amount")}</Label>
                   <div className="relative">
                     <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary/50" />
                     <Input
                       type="number"
                       placeholder="500"
-                      className="pl-12 bg-white/5 border-white/10 focus:border-primary h-11 md:h-14 rounded-xl"
+                      className="pl-12 bg-white/5 border-white/10 focus:border-primary h-11 md:h-14 rounded-2xl"
                       value={formData.budget}
                       onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
                       required
                     />
                   </div>
-                </div>
-
-                <div className="space-y-4">
-                  <Label className="text-xs uppercase tracking-widest text-white/50">{t("exp_level")}</Label>
-                  <select
-                    className="w-full h-11 md:h-14 px-4 bg-white/5 border border-white/10 rounded-xl focus:border-primary outline-none appearance-none"
-                    value={formData.experience_level}
-                    onChange={(e: any) => setFormData({ ...formData, experience_level: e.target.value })}
-                  >
-                    <option value="entry">{t("entry_level")}</option>
-                    <option value="intermediate">{t("intermediate")}</option>
-                    <option value="expert">{t("expert")}</option>
-                  </select>
                 </div>
               </div>
 
@@ -220,7 +165,7 @@ export function PostJobModal({ isOpen, onClose, onSuccess }: PostJobModalProps) 
                   </Button>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {formData.skills_required.map(skill => (
+                  {formData.tags.map(skill => (
                     <Badge 
                       key={skill} 
                       className="bg-primary/10 border-primary/20 text-primary py-2 px-4 rounded-xl cursor-not-allowed group"

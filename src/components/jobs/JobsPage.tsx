@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { db, auth } from '@/lib/firebase';
-import { collection, query, onSnapshot, orderBy, doc } from 'firebase/firestore';
+import { collection, query, onSnapshot, orderBy, doc, deleteDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { Link } from 'react-router-dom';
 import { Job } from '@/types';
@@ -26,8 +26,35 @@ export function JobsPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [budgetRange, setBudgetRange] = useState<[number, number]>([0, 10000]);
-  const [selectedLevels, setSelectedLevels] = useState<string[]>([]);
   const [user, setUser] = useState<any>(null);
+
+  const timeAgo = (date: any) => {
+    if (!date) return '';
+    const seconds = Math.floor((new Date().getTime() - (date?.toDate ? date.toDate().getTime() : new Date(date).getTime())) / 1000);
+    let interval = seconds / 31536000;
+    if (interval > 1) return Math.floor(interval) + " years ago";
+    interval = seconds / 2592000;
+    if (interval > 1) return Math.floor(interval) + " months ago";
+    interval = seconds / 86400;
+    if (interval > 1) return Math.floor(interval) + " days ago";
+    interval = seconds / 3600;
+    if (interval > 1) return Math.floor(interval) + " hours ago";
+    interval = seconds / 60;
+    if (interval > 1) return Math.floor(interval) + " minutes ago";
+    return Math.floor(seconds) + " seconds ago";
+  };
+
+  const handleDeleteJob = async (jobId: string) => {
+    if (window.confirm(t('confirm_delete') || 'Are you sure you want to delete this job?')) {
+      try {
+        await deleteDoc(doc(db, 'jobs', jobId));
+        toast.success(t('deleted_success') || 'Job deleted successfully');
+      } catch (error) {
+        console.error('Error deleting job:', error);
+        toast.error(t('error_sync_failed') || 'Failed to delete job');
+      }
+    }
+  };
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (u) => {
@@ -36,13 +63,17 @@ export function JobsPage() {
 
     setLoading(true);
     const jobsRef = collection(db, 'jobs');
-    const q = query(jobsRef, orderBy('created_at', 'desc'));
+    const q = query(jobsRef);
     
     const unsubscribeJobs = onSnapshot(q, (snapshot) => {
       const jobsData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
-      })) as Job[];
+      })).sort((a: any, b: any) => {
+        const timeA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : new Date(a.createdAt || a.created_at || 0).getTime();
+        const timeB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : new Date(b.createdAt || b.created_at || 0).getTime();
+        return timeB - timeA;
+      }) as Job[];
       setJobsList(jobsData);
       setLoading(false);
     }, (error) => {
@@ -57,14 +88,17 @@ export function JobsPage() {
     };
   }, []);
 
-  const filteredJobs = jobsList.filter(job => 
-    job.status === 'open' &&
-    (job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-     job.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-     job.skills_required?.some(s => s.toLowerCase().includes(searchQuery.toLowerCase()))) &&
-    (job.budget >= budgetRange[0] && job.budget <= budgetRange[1]) &&
-    (selectedLevels.length === 0 || selectedLevels.includes(job.experience_level))
-  );
+  const filteredJobs = jobsList.filter(job => {
+    const matchSearch = searchQuery === '' ||
+      job.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      job.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      job.tags?.some(s => s.toLowerCase().includes(searchQuery.toLowerCase()));
+
+    const budget = job.budget || 0;
+    const matchBudget = budget >= budgetRange[0] && budget <= budgetRange[1];
+
+    return job.status === 'open' && matchSearch && matchBudget;
+  });
 
   return (
     <div className="pt-24 md:pt-32 pb-20 container mx-auto px-4 md:px-6">
@@ -120,34 +154,7 @@ export function JobsPage() {
             </CardContent>
           </Card>
 
-          <Card className="glass border-white/10">
-            <CardHeader>
-              <CardTitle className="text-lg">{t('exp_level')}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {[
-                { label: t('entry_level'), id: 'entry' },
-                { label: t('intermediate'), id: 'intermediate' },
-                { label: t('expert'), id: 'expert' }
-              ].map(level => (
-                <label key={level.id} className="flex items-center gap-3 cursor-pointer group">
-                  <input 
-                    type="checkbox" 
-                    checked={selectedLevels.includes(level.id)}
-                    onChange={() => {
-                      setSelectedLevels(prev => 
-                        prev.includes(level.id) ? prev.filter(l => l !== level.id) : [...prev, level.id]
-                      );
-                    }}
-                    className="w-4 h-4 rounded border-indigo-900/10 text-primary focus:ring-primary/20 accent-primary"
-                  />
-                  <span className={`text-sm font-medium transition-colors ${selectedLevels.includes(level.id) ? 'text-primary' : 'text-indigo-900/60 group-hover:text-primary'}`}>
-                    {level.label}
-                  </span>
-                </label>
-              ))}
-            </CardContent>
-          </Card>
+
         </div>
 
         {/* Users List */}
@@ -173,7 +180,7 @@ export function JobsPage() {
                   viewport={{ once: true }}
                   className="group will-change-transform"
                 >
-                  <Card className={`glass-card border-white/10 will-change-transform hover:border-primary/30 transition-all ${job.is_featured ? 'border-primary/30 bg-primary/5' : ''}`}>
+                  <Card className={`glass-card border-white/10 will-change-transform hover:border-primary/30 transition-all`}>
                     <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
                       <div className="flex gap-4">
                         <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center border border-white/10 group-hover:border-primary/50 transition-colors">
@@ -184,16 +191,10 @@ export function JobsPage() {
                             <CardTitle className="text-xl text-indigo-950 group-hover:text-primary transition-colors text-sharp truncate">
                               {job.title}
                             </CardTitle>
-                            {job.is_featured && (
-                              <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-black border-none font-black text-[8px] tracking-widest px-2 py-0 uppercase">{t('featured')}</Badge>
-                            )}
                           </div>
                           <div className="flex items-center gap-4 text-xs text-indigo-900/40 font-bold uppercase tracking-widest text-sharp">
                             <span className="flex items-center gap-1">
-                              <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" /> {job.experience_level}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Clock className="w-3 h-3 text-primary" /> {new Date(job.created_at).toLocaleDateString()}
+                              <Clock className="w-3 h-3 text-primary" /> {timeAgo(job.createdAt || (job as any).created_at)}
                             </span>
                           </div>
                         </div>
@@ -204,7 +205,7 @@ export function JobsPage() {
                         {job.description}
                       </p>
                       <div className="flex flex-wrap gap-2">
-                        {job.skills_required?.map((skill: string) => (
+                        {job.tags?.map((skill: string) => (
                           <Badge key={skill} variant="secondary" className="bg-white/40 border-indigo-900/10 text-indigo-900/60 text-[10px] font-bold uppercase tracking-tighter">
                             {skill}
                           </Badge>
@@ -214,9 +215,17 @@ export function JobsPage() {
                     <CardFooter className="flex items-center justify-between border-t border-indigo-900/5 pt-6">
                       <div className="flex items-center gap-1.5">
                         <span className="text-xl md:text-2xl font-bold text-indigo-950 text-sharp">${job.budget.toLocaleString()}</span>
-                        <span className="text-indigo-900/40 text-xs md:text-sm font-medium text-sharp">/ {job.budget_type === 'hourly' ? t('hr') : t('project')}</span>
                       </div>
                       <div className="flex gap-2">
+                        {user && (user.uid === job.userId || (user.email && ADMIN_USERS[user.email.toLowerCase()])) && (
+                          <Button 
+                            variant="destructive" 
+                            className="h-9 md:h-10 px-4 font-bold"
+                            onClick={() => handleDeleteJob(job.id)}
+                          >
+                            Delete
+                          </Button>
+                        )}
                         <Button 
                           variant="ghost" 
                           className="glass border-white/10 hover:bg-white/5 h-9 md:h-10 px-6 font-bold"

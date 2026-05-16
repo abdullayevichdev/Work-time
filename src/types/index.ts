@@ -74,18 +74,11 @@ export interface Job {
   title: string;
   description: string;
   budget: number;
-  budget_type: 'fixed' | 'hourly';
-  category: string;
-  experience_level: 'entry' | 'intermediate' | 'expert';
-  skills_required: string[];
-  client_id: string;
-  client_name: string;
-  client_avatar?: string;
-  status: 'open' | 'closed' | 'completed';
-  hired_freelancer_id?: string;
-  hired_freelancer_name?: string;
-  created_at: string;
-  is_featured: boolean;
+  tags: string[];
+  status: 'open' | 'closed';
+  userId: string;
+  createdAt: any;
+  updatedAt: any;
 }
 
 export interface Proposal {

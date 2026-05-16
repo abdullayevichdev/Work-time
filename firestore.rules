@@ -15,9 +15,8 @@ service cloud.firestore {
       return isSignedIn() && (
         exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
         (request.auth.token != null && 'email' in request.auth.token && request.auth.token.email != null && request.auth.token.email.lower() in [
-          'abdulxayavazxanov2012@gmail.com',
-          'unknownprogrammerdev@gmail.com',
-          'tuyginovsardor4@gmail.com'
+          'mansur.ox7@gmail.com',
+          'abdulxayavazxanov2012@gmail.com'
         ])
       );
     }
@@ -54,7 +53,7 @@ service cloud.firestore {
     match /jobs/{jobId} {
       allow read: if true;
       allow create: if isSignedIn();
-      allow update, delete: if isSignedIn() && (resource.data.client_id == request.auth.uid || isAdmin());
+      allow update, delete: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
     }
 
     // Proposals Collection
@@ -82,6 +81,18 @@ service cloud.firestore {
     // Admins helper (if needed for the rules above)
     match /admins/{adminId} {
       allow read: if isSignedIn();
+    }
+
+    // Content Collection
+    match /content/{contentId} {
+      allow read: if isSignedIn(); // Faqat login qilganlar ko'radi
+      allow write: if isAdmin(); // Faqat adminlar yozadi
+    }
+
+    // Activity Collection
+    match /activity/{activityId} {
+      allow create: if true; // Log yozishga ruxsat
+      allow read: if isAdmin();
     }
   }
 }

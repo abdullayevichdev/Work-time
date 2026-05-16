@@ -31,7 +31,7 @@ export function ActiveJobsList() {
 
     const q = query(
       collection(db, 'jobs'),
-      where('client_id', '==', auth.currentUser.uid),
+      where('userId', '==', auth.currentUser.uid),
       where('status', 'in', ['closed', 'completed'])
     );
 

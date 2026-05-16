@@ -35,7 +35,7 @@ export function JobDetailsPage() {
         setLoading(false);
         
         // Fetch client info once we have jobData
-        const unsubClient = onSnapshot(doc(db, 'users', jobData.client_id), (clientSnap) => {
+        const unsubClient = onSnapshot(doc(db, 'users', jobData.userId), (clientSnap) => {
           if (clientSnap.exists()) {
             setClient(clientSnap.data());
           }
@@ -82,14 +82,12 @@ export function JobDetailsPage() {
               <div className="min-w-0">
                 <h1 className="text-3xl md:text-4xl font-display font-bold mb-4 text-indigo-950 text-sharp break-words">{job.title}</h1>
                 <div className="flex flex-wrap gap-4 text-xs md:text-sm text-indigo-900/40 font-bold tracking-tight text-sharp">
-                  <span className="flex items-center gap-1.5"><Tag className="w-4 h-4" /> {job.category}</span>
-                  <span className="flex items-center gap-1.5"><Calendar className="w-4 h-4" /> {t('posted_date')} {new Date(job.created_at).toLocaleDateString()}</span>
+                  <span className="flex items-center gap-1.5"><Calendar className="w-4 h-4" /> {t('posted_date')} {new Date(job.createdAt?.toDate ? job.createdAt.toDate() : job.createdAt).toLocaleDateString()}</span>
                   <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4" /> {t('remote')}</span>
                 </div>
               </div>
               <div className="md:text-right flex flex-col md:items-end">
                 <p className="text-3xl font-bold text-primary text-sharp">${job.budget}</p>
-                <p className="text-sm text-indigo-900/40 font-bold text-sharp whitespace-nowrap">{job.budget_type === 'hourly' ? t('estimated_hr') : t('fixed_price')}</p>
               </div>
             </div>
 
@@ -103,7 +101,7 @@ export function JobDetailsPage() {
             <div className="space-y-6">
               <h3 className="text-xl font-bold text-indigo-950 text-sharp">{t('req_skills')}</h3>
               <div className="flex flex-wrap gap-2">
-                {job.skills_required?.map((skill: string) => (
+                {job.tags?.map((skill: string) => (
                   <Badge key={skill} className="bg-primary/20 text-primary border-primary/30 px-4 py-2">
                     {skill}
                   </Badge>

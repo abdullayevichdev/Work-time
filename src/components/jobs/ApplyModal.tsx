@@ -33,7 +33,7 @@ export function ApplyModal({ isOpen, onClose, job }: ApplyModalProps) {
     try {
       await addDoc(collection(db, 'proposals'), {
         job_id: job.id,
-        client_id: job.client_id,
+        client_id: job.userId,
         freelancer_id: auth.currentUser.uid,
         freelancer_name: auth.currentUser.displayName || 'Anonymous',
         freelancer_avatar: auth.currentUser.photoURL || '',

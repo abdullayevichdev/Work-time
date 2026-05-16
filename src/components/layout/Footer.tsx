@@ -88,7 +88,7 @@ export function Footer() {
             <p className="text-sm text-indigo-900/40 text-sharp">{t("footer_sub_desc")}</p>
             <div className="flex gap-2">
               <input 
-                type="email" 
+                type="email"
                 placeholder={t("footer_email_placeholder")} 
                 className="flex-1 liquid-glass bg-white/40 border border-indigo-900/5 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-primary transition-colors text-indigo-950 placeholder:text-indigo-900/20"
               />
