@@ -1,277 +1,294 @@
 import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect, useRef } from 'react';
 import { db, auth } from '@/lib/firebase';
-import { collection, query, where, getDoc, doc, addDoc, orderBy, onSnapshot } from 'firebase/firestore';
-import { Card, CardContent } from '@/components/ui/card';
+import { collection, doc, getDoc, setDoc, serverTimestamp, updateDoc, onSnapshot } from 'firebase/firestore';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Send, Search, User, ShieldCheck, HelpCircle, ArrowLeft } from 'lucide-react';
+import { Send, Search, User, ShieldCheck, ArrowLeft } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { ADMIN_USERS } from '@/constants';
 import { sendNotification } from '@/lib/notifications';
+import { useConversations, useMessages, sendMessage } from '@/hooks/useMessages';
+import { toast } from 'sonner';
 
 export function MessagesPage() {
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const initialUserId = searchParams.get('userId');
-  const [conversations, setConversations] = useState<any[]>([]);
-  const [selectedChat, setSelectedChat] = useState<any>(null);
-  const [messages, setMessages] = useState<any[]>([]);
-  const [newMessage, setNewMessage] = useState('');
-  const [loading, setLoading] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const isAdmin = auth.currentUser?.email && ADMIN_USERS[auth.currentUser.email.toLowerCase()];
+  const { conversations, loading: loadingConvs } = useConversations();
+  const [selectedChat, setSelectedChat] = useState<any>(null);
+  
+  // Real-time messages listener for selected conversation
+  const { messages, loading: loadingMsgs } = useMessages(selectedChat?.id || null);
+  const [newMessage, setNewMessage] = useState('');
+  const [chatSearch, setChatSearch] = useState('');
+  
+  // Real-time cached user profiles lookup
+  const [profiles, setProfiles] = useState<{[uid: string]: any}>({});
+  const [allUsers, setAllUsers] = useState<any[]>([]);
+  
+  // Typing indicators state
+  const [typing, setTyping] = useState(false);
+  const typingTimeoutRef = useRef<any>(null);
+  const [typingUsersList, setTypingUsersList] = useState<any>({});
 
-  useEffect(() => {
+  const isOwner = !!(auth.currentUser?.email && ADMIN_USERS[auth.currentUser.email.toLowerCase()]);
+  const isParticipant = !!(selectedChat && selectedChat.participants?.includes(auth.currentUser?.uid));
+  const canChat = isOwner || isParticipant;
+
+  const getDirectConversationId = (userId: string) => {
+    if (!auth.currentUser) return userId;
+    return [auth.currentUser.uid, userId].sort().join('_');
+  };
+
+  const openOwnerChat = async (userId: string) => {
     if (!auth.currentUser) return;
+    const convId = getDirectConversationId(userId);
+    const convRef = doc(db, 'conversations', convId);
+    await setDoc(convRef, {
+      participants: [auth.currentUser.uid, userId],
+      lastMessage: t('start_chat_placeholder') || 'Suhbatni boshlang...',
+      lastMessageAt: serverTimestamp()
+    }, { merge: true });
+    setSelectedChat({
+      id: convId,
+      participants: [auth.currentUser.uid, userId]
+    });
+  };
 
-    // 1. Query for messages where user is a participant
-    const userMessagesQ = query(
-      collection(db, 'messages'),
-      where('participants', 'array-contains', auth.currentUser.uid),
-      orderBy('created_at', 'desc')
-    );
-
-    // 2. If admin, ALSO query for all support messages
-    // Since we can't easily merge real-time queries with shared state neatly without complexity,
-    // we'll just have admins listen to all support messages too if they want to see them.
-    // However, for this requirement, let's keep it simple: 
-    // Users send to 'platform_support'. Admins are participants in a shared 'platform_support' group? 
-    // No, users send to 'platform_support'.
-    
-    const supportMessagesQ = isAdmin 
-      ? query(collection(db, 'messages'), where('participants', 'array-contains', 'platform_support'), orderBy('created_at', 'desc'))
-      : null;
-
-    const aggregateMessages = (userMsgs: any[], supportMsgs: any[]) => {
-      const allMsgs = [...userMsgs, ...supportMsgs];
-      const uniqueUsers = new Map();
-      
-      const supportChatId = 'platform_support';
-      
-      if (!isAdmin) {
-        uniqueUsers.set(supportChatId, {
-          id: supportChatId,
-          lastMessage: t('support_desc'),
-          time: new Date(0).toISOString(),
-          name: t('support_chat_name'),
-          avatar: '',
-          isSupport: true
+  // Fetch participant profiles dynamically on demand
+  useEffect(() => {
+    const fetchProfiles = async () => {
+      const uidsToFetch = new Set<string>();
+      conversations.forEach(c => {
+        c.participants?.forEach(uid => {
+          if (auth.currentUser && uid !== auth.currentUser.uid && uid !== 'platform_support') {
+            uidsToFetch.add(uid);
+          }
         });
-      }
-
-      allMsgs.forEach((m: any) => {
-        let otherId;
-        let isSupportChat = false;
-
-        if (!isAdmin) {
-          if (m.receiver_id === supportChatId || m.sender_id === supportChatId) {
-            otherId = supportChatId;
-            isSupportChat = true;
-          } else {
-            otherId = m.sender_id === auth.currentUser?.uid ? m.receiver_id : m.sender_id;
-          }
-        } else {
-          // Admin view
-          if (m.receiver_id === supportChatId) {
-            otherId = m.sender_id;
-            isSupportChat = true;
-          } else if (m.sender_id === supportChatId) {
-            otherId = m.receiver_id;
-            isSupportChat = true;
-          } else {
-            otherId = m.sender_id === auth.currentUser?.uid ? m.receiver_id : m.sender_id;
-          }
-        }
-
-        if (!otherId || otherId === auth.currentUser?.uid) return;
-
-        let chatId = otherId;
-        if (isAdmin && isSupportChat) {
-           chatId = `support_${otherId}`;
-        }
-
-        if (chatId === supportChatId && !isAdmin) {
-          const chat = uniqueUsers.get(supportChatId);
-          if (chat && new Date(m.created_at) > new Date(chat.time)) {
-             chat.lastMessage = m.text;
-             chat.time = m.created_at;
-          }
-          return;
-        }
-
-        if (!uniqueUsers.has(chatId)) {
-          uniqueUsers.set(chatId, {
-            id: chatId,
-            actualUserId: otherId,
-            lastMessage: m.text,
-            time: m.created_at,
-            name: (m.sender_id === otherId ? m.sender_name : m.receiver_name) + (isSupportChat ? ' (Support)' : ''),
-            avatar: m.sender_id === otherId ? m.sender_avatar : m.receiver_avatar,
-            isSupportClient: isSupportChat
-          });
-        } else {
-          const chat = uniqueUsers.get(chatId);
-          if (chat && new Date(m.created_at) > new Date(chat.time)) {
-             chat.lastMessage = m.text;
-             chat.time = m.created_at;
-          }
-        }
       });
 
-      // Handle initialUserId... (skipped for brevity, but I should include)
-      if (initialUserId && !uniqueUsers.has(initialUserId)) {
-         // (Handled below)
+      if (initialUserId && auth.currentUser && initialUserId !== auth.currentUser.uid) {
+        uidsToFetch.add(initialUserId);
       }
 
-      return uniqueUsers;
-    };
-
-    let userMsgsCache: any[] = [];
-    let supportMsgsCache: any[] = [];
-
-    const updateState = () => {
-      const uniqueUsers = aggregateMessages(userMsgsCache, supportMsgsCache);
-      const conversationsArray = Array.from(uniqueUsers.values());
-      conversationsArray.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
-      setConversations(conversationsArray);
-      
-      if (initialUserId && !selectedChat) {
-         const autoSelect = conversationsArray.find(c => c.id === initialUserId);
-         if (autoSelect) setSelectedChat(autoSelect);
-      } else if (!selectedChat && conversationsArray.length > 0) {
-         setSelectedChat(conversationsArray[0]);
+      if (isOwner) {
+        allUsers.forEach((u) => {
+          if (u.id && auth.currentUser && u.id !== auth.currentUser.uid) {
+            uidsToFetch.add(u.id);
+          }
+        });
       }
-      setLoading(false);
+
+      for (const uid of uidsToFetch) {
+        if (!profiles[uid]) {
+          try {
+            const docSnap = await getDoc(doc(db, 'users', uid));
+            if (docSnap.exists()) {
+              setProfiles(prev => ({ ...prev, [uid]: docSnap.data() }));
+            }
+          } catch (e) {
+            console.error("Error fetching user profile for chat:", e);
+          }
+        }
+      }
     };
 
-    const unsubUserMsgs = onSnapshot(userMessagesQ, (snap) => {
-      userMsgsCache = snap.docs.map(d => d.data());
-      updateState();
-    }, (err) => {
-      console.error("userMessagesQ error:", err);
-    });
-
-    const unsubSupportMsgs = supportMessagesQ ? onSnapshot(supportMessagesQ, (snap) => {
-      supportMsgsCache = snap.docs.map(d => d.data());
-      updateState();
-    }, (err) => {
-      console.error("supportMessagesQ error:", err);
-    }) : () => {};
-
-    return () => {
-      unsubUserMsgs();
-      unsubSupportMsgs();
-    };
-  }, [isAdmin, initialUserId]);
+    fetchProfiles();
+  }, [conversations, initialUserId, profiles, allUsers, isOwner]);
 
   useEffect(() => {
-    if (!selectedChat || !auth.currentUser) return;
-
-    let q;
-    if (selectedChat.id === 'platform_support') {
-      q = query(
-        collection(db, 'messages'), 
-        where('participants', 'array-contains', auth.currentUser.uid),
-        orderBy('created_at', 'asc')
-      );
-    } else if (isAdmin && selectedChat.isSupportClient) {
-      q = query(
-        collection(db, 'messages'),
-        where('participants', 'array-contains', selectedChat.actualUserId),
-        orderBy('created_at', 'asc')
-      );
-    } else {
-      q = query(
-        collection(db, 'messages'),
-        where('participants', 'array-contains', auth.currentUser.uid),
-        orderBy('created_at', 'asc')
-      );
+    if (!auth.currentUser || !isOwner) {
+      setAllUsers([]);
+      return;
     }
 
-    const unsubscribe = onSnapshot(q, (snap) => {
-      const msgs = snap.docs
-        .map(d => d.data())
-        .filter((m: any) => {
-          if (selectedChat.id === 'platform_support') {
-             return m.receiver_id === 'platform_support' || m.sender_id === 'platform_support';
-          }
-          if (isAdmin && selectedChat.isSupportClient) {
-             return m.receiver_id === 'platform_support' || m.sender_id === 'platform_support';
-          }
-          return m.participants.includes(selectedChat.id) && m.receiver_id !== 'platform_support' && m.sender_id !== 'platform_support';
-        });
-      setMessages(msgs);
-      setTimeout(() => scrollRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+    const unsub = onSnapshot(collection(db, 'users'), (snap) => {
+      const users = snap.docs
+        .map((d) => ({ id: d.id, ...d.data() } as any))
+        .filter((u) => u.id !== auth.currentUser?.uid && !u.isDeleted);
+      setAllUsers(users);
     }, (err) => {
-      console.error("selectedChat messages query error:", err);
+      console.error('Error fetching users for owner chat list:', err);
     });
 
-    return () => unsubscribe();
-  }, [selectedChat, isAdmin]);
+    return () => unsub();
+  }, [isOwner]);
+
+  // Handle auto-selecting initialUserId
+  useEffect(() => {
+    if (initialUserId && auth.currentUser) {
+      const existing = conversations.find(c => c.participants?.includes(initialUserId));
+      if (existing) {
+        setSelectedChat(existing);
+      } else {
+        const createInitialConv = async () => {
+          const convId = [auth.currentUser.uid, initialUserId].sort().join('_');
+          const convRef = doc(db, 'conversations', convId);
+          await setDoc(convRef, {
+            participants: [auth.currentUser.uid, initialUserId],
+            lastMessage: t('start_chat_placeholder') || 'Suhbatni boshlang...',
+            lastMessageAt: serverTimestamp()
+          }, { merge: true });
+        };
+        createInitialConv();
+      }
+    } else if (!selectedChat && conversations.length > 0 && !isOwner) {
+      setSelectedChat(conversations[0]);
+    }
+  }, [initialUserId, conversations, isOwner, selectedChat, t]);
+
+  // Scroll to bottom on new messages
+  useEffect(() => {
+    if (messages.length > 0) {
+      setTimeout(() => scrollRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+    }
+  }, [messages]);
+
+  const handleSupportClick = async () => {
+    if (!auth.currentUser) return;
+    const convId = `support_${auth.currentUser.uid}`;
+    const convRef = doc(db, 'conversations', convId);
+    await setDoc(convRef, {
+      participants: [auth.currentUser.uid, 'platform_support'],
+      lastMessage: t('support_desc') || 'Support team contact',
+      lastMessageAt: serverTimestamp()
+    }, { merge: true });
+
+    setSelectedChat({
+      id: convId,
+      participants: [auth.currentUser.uid, 'platform_support'],
+      name: t('support_chat_name'),
+      avatar: '',
+      isSupport: true
+    });
+  };
+
+  // Monitor typing indicators listener
+  useEffect(() => {
+    if (!selectedChat) {
+      setTypingUsersList({});
+      return;
+    }
+    const unsub = onSnapshot(doc(db, 'conversations', selectedChat.id), (docSnap) => {
+      if (docSnap.exists()) {
+        setTypingUsersList(docSnap.data().typingUsers || {});
+      } else {
+        setTypingUsersList({});
+      }
+    }, (err) => {
+      console.warn("Typing listener error", err);
+    });
+    return () => unsub();
+  }, [selectedChat]);
+
+  // Handle setting typing indicator state in Firestore when newMessage changes
+  useEffect(() => {
+    if (!selectedChat || !auth.currentUser || selectedChat.id.startsWith('support_')) return;
+    
+    if (!newMessage.trim()) {
+      if (typing) {
+        setTyping(false);
+        updateDoc(doc(db, 'conversations', selectedChat.id), {
+          [`typingUsers.${auth.currentUser.uid}`]: false
+        }).catch(err => console.warn(err));
+      }
+      return;
+    }
+
+    if (!typing) {
+      setTyping(true);
+      updateDoc(doc(db, 'conversations', selectedChat.id), {
+        [`typingUsers.${auth.currentUser.uid}`]: true
+      }).catch(err => console.warn(err));
+    }
+
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    
+    typingTimeoutRef.current = setTimeout(() => {
+      setTyping(false);
+      if (selectedChat && auth.currentUser) {
+        updateDoc(doc(db, 'conversations', selectedChat.id), {
+          [`typingUsers.${auth.currentUser.uid}`]: false
+        }).catch(err => console.warn(err));
+      }
+    }, 3000);
+
+    return () => {
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    };
+  }, [newMessage, selectedChat]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || !selectedChat || !auth.currentUser) return;
+    if (!canChat) {
+      toast.error(t('access_denied'), { description: t('access_denied_desc') });
+      return;
+    }
+
+    // Reset typing status on send
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    setTyping(false);
+    if (!selectedChat.id.startsWith('support_')) {
+      updateDoc(doc(db, 'conversations', selectedChat.id), {
+        [`typingUsers.${auth.currentUser.uid}`]: false
+      }).catch(err => console.warn(err));
+    }
 
     try {
-      if (selectedChat.id === 'platform_support') {
-        await addDoc(collection(db, 'messages'), {
-          sender_id: auth.currentUser.uid,
-          sender_name: auth.currentUser.displayName || 'User',
-          sender_avatar: auth.currentUser.photoURL || '',
-          receiver_id: 'platform_support',
-          receiver_name: t('support_chat_name'),
-          receiver_avatar: '',
-          text: newMessage,
-          participants: [auth.currentUser.uid, 'platform_support'],
-          created_at: new Date().toISOString()
-        });
-        // Note: For platform support, we might notify all admins or just leave it for them to check the dashboard
-      } else if (isAdmin && selectedChat.isSupportClient) {
-        await addDoc(collection(db, 'messages'), {
-          sender_id: 'platform_support',
-          sender_name: t('support_chat_name'),
-          sender_avatar: '',
-          receiver_id: selectedChat.actualUserId,
-          receiver_name: selectedChat.name,
-          receiver_avatar: selectedChat.avatar,
-          text: newMessage,
-          participants: [selectedChat.actualUserId, 'platform_support'],
-          created_at: new Date().toISOString()
-        });
-        await sendNotification(
-          selectedChat.actualUserId,
-          t('support_chat_name'),
-          newMessage,
-          'message'
-        );
-      } else {
-        await addDoc(collection(db, 'messages'), {
-          sender_id: auth.currentUser.uid,
-          sender_name: auth.currentUser.displayName || 'User',
-          sender_avatar: auth.currentUser.photoURL || '',
-          receiver_id: selectedChat.id,
-          receiver_name: selectedChat.name,
-          receiver_avatar: selectedChat.avatar || '',
-          text: newMessage,
-          participants: [auth.currentUser.uid, selectedChat.id],
-          created_at: new Date().toISOString()
-        });
-        await sendNotification(
-          selectedChat.id,
-          auth.currentUser.displayName || 'User',
-          newMessage,
-          'message'
-        );
+      await sendMessage(selectedChat.id, newMessage);
+
+      // Trigger notifications for the recipient
+      const recipientId = selectedChat.participants?.find((uid: string) => uid !== auth.currentUser.uid);
+      if (recipientId && recipientId !== 'platform_support') {
+        const senderName = auth.currentUser.displayName || 'User';
+        await sendNotification(recipientId, senderName, newMessage, 'message');
       }
+
       setNewMessage('');
     } catch (error) {
       console.error('Error sending message:', error);
     }
   };
+
+  // Helper to format chat info
+  const getChatInfo = (chat: any) => {
+    const isSupport = chat.participants?.includes('platform_support');
+    if (isSupport) {
+      return {
+        name: t('support_chat_name'),
+        avatar: '',
+        isSupport: true
+      };
+    }
+
+    const otherUid = chat.participants?.find((uid: string) => auth.currentUser && uid !== auth.currentUser.uid);
+    const profile = profiles[otherUid || ''];
+    return {
+      name: profile?.full_name || profile?.displayName || otherUid || 'User',
+      avatar: profile?.photo_url || profile?.photoURL || '',
+      isSupport: false
+    };
+  };
+
+  const convByOtherUid: Record<string, any> = {};
+  conversations.forEach((chat) => {
+    const otherUid = chat.participants?.find((uid: string) => auth.currentUser && uid !== auth.currentUser.uid && uid !== 'platform_support');
+    if (otherUid) {
+      convByOtherUid[otherUid] = chat;
+    }
+  });
+
+  const filteredUsers = allUsers.filter((u) => {
+    const q = chatSearch.trim().toLowerCase();
+    if (!q) return true;
+    const name = (u.full_name || u.displayName || u.email || '').toLowerCase();
+    return name.includes(q);
+  });
 
   return (
     <div className="pt-32 pb-20 container mx-auto px-6 h-[calc(100vh-80px)]">
@@ -281,47 +298,86 @@ export function MessagesPage() {
           <div className="p-6 border-b border-white/10 space-y-4">
             <h2 className="text-xl font-bold">{t("messages_title")}</h2>
             
-            <Button 
-              onClick={() => setSelectedChat({
-                id: 'platform_support',
-                name: t('support_chat_name'),
-                avatar: '',
-                isSupport: true
-              })}
-              className={`w-full gap-2 font-bold h-11 transition-all ${selectedChat?.id === 'platform_support' ? 'bg-primary shadow-lg shadow-primary/20' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}
-            >
-              <ShieldCheck className="w-4 h-4" />
-              {t('contact_support')}
-            </Button>
+            {!isOwner && (
+              <Button 
+                onClick={handleSupportClick}
+                className={`w-full gap-2 font-bold h-11 transition-all ${selectedChat?.participants?.includes('platform_support') ? 'bg-primary shadow-lg shadow-primary/20' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}
+              >
+                <ShieldCheck className="w-4 h-4" />
+                {t('contact_support')}
+              </Button>
+            )}
 
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
-              <Input placeholder={t("search_chats")} className="pl-10 bg-white/5 border-white/10" />
+              <Input
+                placeholder={t("search_chats")}
+                className="pl-10 bg-white/5 border-white/10"
+                value={chatSearch}
+                onChange={(e) => setChatSearch(e.target.value)}
+              />
             </div>
           </div>
           
           <div className="flex-1 overflow-y-auto">
-            {conversations.filter(c => !c.isSupport).map((chat) => (
-              <div
-                key={chat.id}
-                onClick={() => setSelectedChat(chat)}
-                className={`p-4 flex items-center gap-4 cursor-pointer hover:bg-white/5 transition-colors ${selectedChat?.id === chat.id ? 'bg-white/10' : ''}`}
-              >
-                <Avatar className="border border-white/10">
-                  <AvatarImage src={chat.avatar || undefined} />
-                  <AvatarFallback><User className="w-4 h-4" /></AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-center mb-1">
-                    <h4 className="font-bold truncate">{chat.name}</h4>
-                    <span className="text-[10px] text-white/30">{new Date(chat.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+            {isOwner ? filteredUsers.map((u) => {
+              const chat = convByOtherUid[u.id];
+              const convId = getDirectConversationId(u.id);
+              const isSelected = selectedChat?.id === convId;
+              const displayName = u.full_name || u.displayName || u.email || 'User';
+              return (
+                <div
+                  key={u.id}
+                  onClick={() => openOwnerChat(u.id)}
+                  className={`p-4 flex items-center gap-4 cursor-pointer hover:bg-white/5 transition-colors ${isSelected ? 'bg-white/10' : ''}`}
+                >
+                  <Avatar className="border border-white/10">
+                    <AvatarImage src={(u.photo_url || u.photoURL) || undefined} />
+                    <AvatarFallback><User className="w-4 h-4" /></AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-center mb-1">
+                      <h4 className="font-bold truncate text-indigo-950 text-sharp">{displayName}</h4>
+                      {chat?.lastMessageAt && (
+                        <span className="text-[10px] text-indigo-950/40">
+                          {chat.lastMessageAt?.toDate ? chat.lastMessageAt.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-indigo-950/40 truncate">{chat?.lastMessage || t('start_chat_placeholder')}</p>
                   </div>
-                  <p className="text-xs text-white/40 truncate">{chat.lastMessage}</p>
                 </div>
-              </div>
-            ))}
-            {!loading && conversations.length === 0 && (
-              <div className="p-8 text-center text-white/20 text-sm">{t("no_conversations")}</div>
+              );
+            }) : conversations.map((chat) => {
+              const info = getChatInfo(chat);
+              const isSelected = selectedChat?.id === chat.id;
+              
+              return (
+                <div
+                  key={chat.id}
+                  onClick={() => setSelectedChat(chat)}
+                  className={`p-4 flex items-center gap-4 cursor-pointer hover:bg-white/5 transition-colors ${isSelected ? 'bg-white/10' : ''}`}
+                >
+                  <Avatar className="border border-white/10">
+                    <AvatarImage src={info.avatar || undefined} />
+                    <AvatarFallback><User className="w-4 h-4" /></AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-center mb-1">
+                      <h4 className="font-bold truncate text-indigo-950 text-sharp">{info.name}</h4>
+                      {chat.lastMessageAt && (
+                        <span className="text-[10px] text-indigo-950/40">
+                          {chat.lastMessageAt?.toDate ? chat.lastMessageAt.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-indigo-950/40 truncate">{chat.lastMessage}</p>
+                  </div>
+                </div>
+              );
+            })}
+            {!loadingConvs && (isOwner ? filteredUsers.length === 0 : conversations.length === 0) && (
+              <div className="p-8 text-center text-indigo-950/20 text-sm">{t("no_conversations")}</div>
             )}
           </div>
         </div>
@@ -340,61 +396,77 @@ export function MessagesPage() {
                   <ArrowLeft className="w-5 h-5" />
                 </Button>
                 <Avatar className="w-10 h-10 border border-white/10">
-                  <AvatarImage src={selectedChat.avatar || undefined} />
+                  <AvatarImage src={getChatInfo(selectedChat).avatar || undefined} />
                   <AvatarFallback><User className="w-4 h-4" /></AvatarFallback>
                 </Avatar>
                 <div>
-                  <h3 className="font-bold">{selectedChat.name}</h3>
-                  <p className="text-[10px] text-green-400">{t("online")}</p>
+                  <h3 className="font-bold text-indigo-950 text-sharp">{getChatInfo(selectedChat).name}</h3>
+                  <p className="text-[10px] text-green-500">{t("online")}</p>
                 </div>
               </div>
 
               <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                {messages.map((msg, i) => (
-                  <div
-                    key={i}
-                    className={`flex ${msg.sender_id === auth.currentUser?.uid ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div className="flex flex-col gap-1 max-w-[70%]">
-                      {msg.sender_id !== auth.currentUser?.uid && (
-                        <span className="text-[10px] font-bold text-indigo-900/60 uppercase tracking-wider ml-2">
-                          {msg.sender_name || 'User'}
-                        </span>
-                      )}
-                      <div
-                        className={`p-4 rounded-2xl text-sm shadow-sm ${
-                          msg.sender_id === auth.currentUser?.uid
-                            ? 'bg-primary text-white rounded-tr-none shadow-primary/20'
-                            : 'bg-white text-indigo-950 rounded-tl-none border border-indigo-900/10'
-                        }`}
-                      >
-                        {msg.text}
-                        <div className={`text-[10px] mt-2 font-medium ${msg.sender_id === auth.currentUser?.uid ? 'text-white/70' : 'text-indigo-950/40'}`}>
-                          {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                {messages.map((msg, i) => {
+                  const isOwn = msg.senderId === auth.currentUser?.uid;
+                  const otherUid = selectedChat.participants?.find((uid: string) => auth.currentUser && uid !== auth.currentUser.uid);
+                  const profile = profiles[otherUid || ''];
+                  const senderName = isOwn ? 'You' : (profile?.full_name || profile?.displayName || 'User');
+                  
+                  return (
+                    <div
+                      key={i}
+                      className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div className="flex flex-col gap-1 max-w-[70%]">
+                        {!isOwn && (
+                          <span className="text-[10px] font-bold text-indigo-900/60 uppercase tracking-wider ml-2">
+                            {senderName}
+                          </span>
+                        )}
+                        <div
+                          className={`p-4 rounded-2xl text-sm shadow-sm ${
+                            isOwn
+                              ? 'bg-primary text-white rounded-tr-none shadow-primary/20'
+                              : 'bg-white text-indigo-950 rounded-tl-none border border-indigo-900/10'
+                          }`}
+                        >
+                          {msg.text}
+                          <div className={`text-[10px] mt-2 font-medium ${isOwn ? 'text-white/70' : 'text-indigo-950/40'}`}>
+                            {msg.createdAt?.toDate ? msg.createdAt.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
                 <div ref={scrollRef} />
               </div>
+
+              {/* Typing Indicators */}
+              {Object.keys(typingUsersList).some(uid => uid !== auth.currentUser?.uid && typingUsersList[uid] === true) && (
+                <div className="px-6 py-2.5 text-[10px] font-black uppercase text-emerald-500 tracking-wider animate-pulse bg-white/20 text-left border-t border-black/5 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce" />
+                  <span>{getChatInfo(selectedChat).name} yozmoqda...</span>
+                </div>
+              )}
 
               <form onSubmit={handleSendMessage} className="p-6 border-t border-black/5 bg-white/40">
                 <div className="flex gap-4">
                   <Input
-                    placeholder={t("type_message")}
+                    placeholder={canChat ? t("type_message") : (t('access_denied_desc') || 'Ruxsat yo‘q')}
                     className="bg-white/50 border-black/5 text-indigo-950 focus:border-primary"
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
+                    disabled={!canChat}
                   />
-                  <Button type="submit" className="bg-primary hover:bg-primary/80 text-white">
+                  <Button type="submit" className="bg-primary hover:bg-primary/80 text-white" disabled={!canChat}>
                     <Send className="w-4 h-4" />
                   </Button>
                 </div>
               </form>
             </>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-white/20">
+            <div className="flex-1 flex flex-col items-center justify-center text-indigo-950/20">
               <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center mb-4">
                 <Send className="w-10 h-10" />
               </div>

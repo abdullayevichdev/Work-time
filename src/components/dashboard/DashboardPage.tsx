@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { 
   Briefcase, MessageSquare, 
   TrendingUp, Users, DollarSign, Clock, ArrowUpRight, Star, Loader2
@@ -22,7 +22,7 @@ import { WorkRequestsList } from '@/components/dashboard/WorkRequestsList';
 import { ActiveJobsList } from '@/components/dashboard/ActiveJobsList';
 
 import { useNavigate } from 'react-router-dom';
-import { ADMIN_USERS } from '@/constants';
+import { isAdminEmail } from '@/constants';
 import { calculateProfileCompletion } from '@/lib/profile';
 
 export function DashboardPage() {
@@ -128,7 +128,7 @@ export function DashboardPage() {
     { label: t('employers'), value: statsData.employersCount.toString(), icon: Users, color: 'text-blue-400', bg: 'bg-blue-400/10' },
     { label: t('total_earnings'), value: `$${(statsData.money || 0).toLocaleString()}`, icon: DollarSign, color: 'text-green-400', bg: 'bg-green-400/10' },
     { label: t('messages_title'), value: (statsData.notifications || 0).toString(), icon: MessageSquare, color: 'text-purple-400', bg: 'bg-purple-400/10' },
-    { label: t('profile_views'), value: (profile?.views || 0).toString(), icon: TrendingUp, color: 'text-orange-400', bg: 'bg-orange-400/10' },
+    { label: t('profile_views'), value: (profile?.profileViews || 0).toString(), icon: TrendingUp, color: 'text-orange-400', bg: 'bg-orange-400/10' },
   ];
 
   if (loading) return (
@@ -165,7 +165,7 @@ export function DashboardPage() {
                 {t('welcome_back')} <span className="text-primary font-bold">{profile?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'User'}</span>!
               </h1>
               <div className="flex gap-2">
-                {(user?.email && ADMIN_USERS[user.email.toLowerCase()]) ? (
+                {isAdminEmail(user?.email) ? (
                   <Badge className="bg-gradient-to-r from-yellow-400 to-orange-500 text-black border-none font-black text-[10px] tracking-widest px-3">OWNER</Badge>
                 ) : (profile?.is_premium) && (
                   <Badge className="bg-gradient-to-r from-blue-400 to-indigo-500 text-white border-none font-black text-[10px] tracking-widest px-3 uppercase">PREMIUM</Badge>

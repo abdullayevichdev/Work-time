@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Menu, X, User, LogOut, MessageSquare, 
   Bell, Briefcase, LayoutDashboard, Globe, ChevronDown,
-  Users, Shield, Trash2, CheckCircle,
+  Users, Shield, Trash2, CheckCircle, Inbox,
   Instagram, Youtube
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,7 @@ import {
 import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { collection, query, where, onSnapshot, orderBy, updateDoc, doc, deleteDoc, limit } from 'firebase/firestore';
+import { NotificationBell } from './NotificationBell';
 
 export function Navbar() {
   const { t, i18n } = useTranslation();
@@ -27,33 +28,10 @@ export function Navbar() {
   const [user, setUser] = useState<any>(null);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [notifications, setNotifications] = useState<any[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
-      
-      if (currentUser) {
-        // Notifications Listener
-        const q = query(
-          collection(db, 'notifications'),
-          where('userId', '==', currentUser.uid),
-          orderBy('createdAt', 'desc'),
-          limit(10)
-        );
-
-        const unsubNotifs = onSnapshot(q, (snap) => {
-          const docs = snap.docs.map(d => ({ id: d.id, ...d.data() } as any));
-          setNotifications(docs);
-          setUnreadCount(docs.filter(n => !n.read).length);
-        });
-
-        return () => unsubNotifs();
-      } else {
-        setNotifications([]);
-        setUnreadCount(0);
-      }
     });
 
     const handleScroll = () => {
@@ -67,35 +45,6 @@ export function Navbar() {
     };
   }, []);
 
-  const markAsRead = async (id: string) => {
-    try {
-      await updateDoc(doc(db, 'notifications', id), { read: true });
-    } catch (e) {
-      console.error("Error marking as read:", e);
-    }
-  };
-
-  const markAllAsRead = async () => {
-    try {
-      const unreadNotifs = notifications.filter(n => !n.read);
-      if (unreadNotifs.length === 0) return;
-      await Promise.all(
-        unreadNotifs.map(n => updateDoc(doc(db, 'notifications', n.id), { read: true }))
-      );
-    } catch (e) {
-      console.error("Error marking all as read:", e);
-    }
-  };
-
-  const deleteNotification = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    try {
-      await deleteDoc(doc(db, 'notifications', id));
-    } catch (e) {
-      console.error("Error deleting notification:", e);
-    }
-  };
-
   const handleLogout = async () => {
     await signOut(auth);
     navigate('/');
@@ -108,100 +57,52 @@ export function Navbar() {
   const navLinks = [
     { name: t('dashboard'), href: '/dashboard', icon: LayoutDashboard },
     { name: t('jobs'), href: '/jobs', icon: Briefcase },
+    { name: t('requests') || 'Requests', href: '/requests', icon: Inbox },
     { name: t('messages'), href: '/messages', icon: MessageSquare },
     { name: t('talents'), href: '/talents', icon: Users },
   ];
 
   return (
     <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-700 ${isScrolled ? 'py-2 md:py-4 translate-y-2' : 'py-6 md:py-8'}`}>
-      <div className={`container mx-auto px-4 md:px-6 transition-all duration-700 ${isScrolled ? 'max-w-[95%] md:max-w-4xl' : 'max-w-7xl'}`}>
+      <div className={`container mx-auto px-4 md:px-6 transition-all duration-700 ${isScrolled ? 'max-w-[95%] md:max-w-6xl' : 'max-w-7xl'}`}>
         <div className={`flex items-center justify-between transition-all duration-700 ${isScrolled ? 'glass-dark rounded-2xl md:rounded-full px-6 md:px-8 py-3' : 'bg-transparent'}`}>
-          <Link to="/" className="flex items-center gap-3 group">
+          <Link to="/" className="flex items-center gap-3 group shrink-0">
             <img src="/WorkTime_logo_sayt2.png" alt="WorkTime Logo" className="h-10 w-auto group-hover:opacity-80 transition-opacity" />
           </Link>
-
+          
           {/* Desktop Nav */}
-          <div className="hidden md:flex items-center gap-10">
+          <div className="hidden md:flex items-center gap-4 lg:gap-6 xl:gap-8 shrink-0">
             {navLinks.map((link) => (
               <Link 
                 key={link.name} 
                 to={link.href}
-                className="text-xs font-black tracking-widest uppercase text-indigo-900/40 hover:text-primary transition-all duration-300 hover:scale-110 active:scale-95 text-sharp"
+                className="text-[10px] lg:text-xs font-black tracking-widest uppercase text-indigo-900/40 hover:text-primary transition-all duration-300 hover:scale-110 active:scale-95 text-sharp shrink-0"
               >
                 {link.name}
               </Link>
             ))}
           </div>
 
-          <div className="hidden md:flex items-center gap-6">
-            <div className="flex gap-4">
-               <button onClick={() => changeLanguage('en')} className={`text-[10px] font-bold ${i18n.language === 'en' ? 'text-primary' : 'text-indigo-900/20'}`}>EN</button>
-               <button onClick={() => changeLanguage('uz')} className={`text-[10px] font-bold ${i18n.language === 'uz' ? 'text-primary' : 'text-indigo-900/20'}`}>UZ</button>
-               <button onClick={() => changeLanguage('ru')} className={`text-[10px] font-bold ${i18n.language === 'ru' ? 'text-primary' : 'text-indigo-900/20'}`}>RU</button>
+          <div className="hidden md:flex items-center gap-3 lg:gap-6 shrink-0">
+            <div className="flex bg-white/40 backdrop-blur-md border border-white/50 p-1 rounded-xl gap-0.5 shadow-sm">
+              {['en', 'uz', 'ru'].map((lng) => (
+                <button
+                  key={lng}
+                  onClick={() => changeLanguage(lng)}
+                  className={`px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all tracking-wider cursor-pointer ${
+                    i18n.language === lng
+                      ? 'bg-primary text-white shadow-md'
+                      : 'text-indigo-950/50 hover:text-indigo-950 hover:bg-white/30'
+                  }`}
+                >
+                  {lng}
+                </button>
+              ))}
             </div>
 
             {user ? (
               <div className="flex items-center gap-4">
-                <DropdownMenu onOpenChange={(open) => { if (open) markAllAsRead(); }}>
-                  <DropdownMenuTrigger className="w-10 h-10 rounded-full liquid-glass border-white/60 flex items-center justify-center hover:bg-white/40 transition-colors shadow-sm group relative">
-                    <Bell className="w-5 h-5 text-indigo-900/40 group-hover:text-primary transition-colors" />
-                    {unreadCount > 0 && (
-                      <span className="absolute top-0 right-0 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center shadow-md shadow-red-500/40 ring-2 ring-white z-10">
-                        {unreadCount}
-                      </span>
-                    )}
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="liquid-glass border-white/60 w-80 bg-white/80 backdrop-blur-3xl px-1 py-1" align="end">
-                    <div className="p-3 text-[10px] font-bold text-indigo-900/40 uppercase tracking-widest border-b border-indigo-900/5 mb-1 flex justify-between items-center">
-                      {t('notifications')}
-                    </div>
-                    <div className="max-h-[400px] overflow-y-auto">
-                      {notifications.length > 0 ? (
-                        notifications.map((notif) => (
-                          <DropdownMenuItem 
-                            key={notif.id}
-                            onClick={() => { markAsRead(notif.id); navigate('/dashboard'); }}
-                            className={`flex items-start gap-3 p-3 cursor-pointer border-b border-indigo-900/5 last:border-0 hover:bg-white/40 group ${!notif.read ? 'bg-primary/5' : ''}`}
-                          >
-                            <div className="relative">
-                              <User className="w-8 h-8 p-1.5 rounded-full bg-indigo-900/5 text-indigo-900/40" />
-                              {!notif.read && <div className="absolute top-0 right-0 w-2 h-2 bg-primary rounded-full" />}
-                            </div>
-                            <div className="flex-1 space-y-1">
-                              <p className={`text-xs font-bold text-indigo-950 leading-tight ${!notif.read ? 'pr-6' : ''}`}>
-                                {notif.content}
-                              </p>
-                              <p className="text-[10px] text-indigo-900/40 font-medium">
-                                {new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                              </p>
-                            </div>
-                            <div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <button 
-                                onClick={(e) => deleteNotification(notif.id, e)}
-                                className="p-1 rounded-md text-red-400 hover:bg-red-50"
-                                title="Delete"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </button>
-                            </div>
-                          </DropdownMenuItem>
-                        ))
-                      ) : (
-                        <div className="py-8 text-center">
-                          <Bell className="w-8 h-8 mx-auto mb-2 opacity-10" />
-                          <p className="text-indigo-900/40 text-[10px] font-bold uppercase tracking-widest">{t('no_new_notifications')}</p>
-                        </div>
-                      )}
-                    </div>
-                    {notifications.length > 0 && (
-                      <div className="p-2 border-t border-indigo-900/5">
-                        <Button variant="ghost" size="sm" className="w-full text-[10px] font-bold uppercase tracking-widest text-indigo-900/40 hover:text-primary" onClick={() => navigate('/dashboard')}>
-                          {t('view_all')}
-                        </Button>
-                      </div>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <NotificationBell />
 
                 <DropdownMenu>
                   <DropdownMenuTrigger className="w-10 h-10 rounded-full liquid-glass border-white/60 flex items-center justify-center hover:bg-white/40 transition-colors shadow-sm group">
@@ -313,10 +214,20 @@ export function Navbar() {
                   <Globe className="w-3.5 h-3.5" />
                   <span className="text-[10px] font-bold uppercase tracking-widest">{t('language')}</span>
                 </div>
-                <div className="flex gap-4">
-                  <button onClick={() => changeLanguage('en')} className={`text-xs font-bold tracking-tight ${i18n.language === 'en' ? 'text-primary' : 'text-indigo-900/30'}`}>EN</button>
-                  <button onClick={() => changeLanguage('uz')} className={`text-xs font-bold tracking-tight ${i18n.language === 'uz' ? 'text-primary' : 'text-indigo-900/30'}`}>UZ</button>
-                  <button onClick={() => changeLanguage('ru')} className={`text-xs font-bold tracking-tight ${i18n.language === 'ru' ? 'text-primary' : 'text-indigo-900/30'}`}>RU</button>
+                <div className="flex bg-white/40 backdrop-blur-md border border-white/50 p-0.5 rounded-xl gap-0.5 shadow-sm">
+                  {['en', 'uz', 'ru'].map((lng) => (
+                    <button
+                      key={lng}
+                      onClick={() => changeLanguage(lng)}
+                      className={`px-2.5 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all tracking-wider cursor-pointer ${
+                        i18n.language === lng
+                          ? 'bg-primary text-white shadow-md'
+                          : 'text-indigo-950/50 hover:text-indigo-950 hover:bg-white/30'
+                      }`}
+                    >
+                      {lng}
+                    </button>
+                  ))}
                 </div>
               </div>
 

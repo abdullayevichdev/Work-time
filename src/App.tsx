@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Toaster } from '@/components/ui/sonner';
 import { Navbar } from '@/components/layout/Navbar';
 import { HomePage } from '@/components/home/HomePage';
@@ -12,9 +12,13 @@ import { TalentsPage } from '@/components/talents/TalentsPage';
 import { ProfilePage } from '@/components/profile/ProfilePage';
 import { MessagesPage } from '@/components/messages/MessagesPage';
 import { AdminDashboard } from '@/components/admin/AdminDashboard';
+import { OnboardingWizard } from '@/components/profile/OnboardingWizard';
+import { RequestsPage } from '@/components/profile/RequestsPage';
+import { ProfileCompletionBanner } from '@/components/profile/ProfileCompletionBanner';
+import { RequireCompleteProfile } from '@/components/profile/RequireCompleteProfile';
 import '@/lib/i18n';
 
-function PageTransition({ children }: { children: React.ReactNode }) {
+function AnimatedRoutes() {
   const location = useLocation();
   return (
     <AnimatePresence mode="wait">
@@ -26,7 +30,24 @@ function PageTransition({ children }: { children: React.ReactNode }) {
         transition={{ duration: 0.3, ease: "easeOut" }}
         className="w-full will-change-[opacity,transform]"
       >
-        {children}
+        <Routes location={location}>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/login" element={<AuthPage mode="login" />} />
+          <Route path="/signup" element={<AuthPage mode="signup" />} />
+          <Route path="/onboarding" element={<OnboardingWizard />} />
+          
+          <Route path="/dashboard" element={<RequireCompleteProfile><DashboardPage /></RequireCompleteProfile>} />
+          <Route path="/jobs" element={<RequireCompleteProfile><JobsPage /></RequireCompleteProfile>} />
+          <Route path="/jobs/:id" element={<RequireCompleteProfile><JobDetailsPage /></RequireCompleteProfile>} />
+          <Route path="/talents" element={<RequireCompleteProfile><TalentsPage /></RequireCompleteProfile>} />
+          <Route path="/profile" element={<RequireCompleteProfile><ProfilePage /></RequireCompleteProfile>} />
+          <Route path="/profile/:id" element={<RequireCompleteProfile><ProfilePage /></RequireCompleteProfile>} />
+          <Route path="/messages" element={<RequireCompleteProfile><MessagesPage /></RequireCompleteProfile>} />
+          <Route path="/requests" element={<RequireCompleteProfile><RequestsPage /></RequireCompleteProfile>} />
+          
+          <Route path="/admin" element={<div className="pt-32 pb-20 container mx-auto px-6"><AdminDashboard /></div>} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </motion.div>
     </AnimatePresence>
   );
@@ -41,23 +62,11 @@ export default function App() {
         <div className="noise-bg" />
         
         <Navbar />
+        <div className="pt-20">
+          <ProfileCompletionBanner />
+        </div>
         <main className="relative z-10">
-          <PageTransition>
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/login" element={<AuthPage mode="login" />} />
-              <Route path="/signup" element={<AuthPage mode="signup" />} />
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/jobs" element={<JobsPage />} />
-              <Route path="/jobs/:id" element={<JobDetailsPage />} />
-              <Route path="/talents" element={<TalentsPage />} />
-              <Route path="/profile" element={<ProfilePage />} />
-              <Route path="/profile/:id" element={<ProfilePage />} />
-              <Route path="/messages" element={<MessagesPage />} />
-              <Route path="/admin" element={<div className="pt-32 pb-20 container mx-auto px-6"><AdminDashboard /></div>} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </PageTransition>
+          <AnimatedRoutes />
         </main>
         <Toaster position="top-center" richColors />
       </div>

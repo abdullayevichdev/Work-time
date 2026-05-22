@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { db, auth } from '@/lib/firebase';
-import { collection, query, where, onSnapshot, orderBy, updateDoc, doc, setDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, updateDoc, doc, setDoc } from 'firebase/firestore';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,12 +24,17 @@ export function WorkRequestsList({ role }: { role: 'freelancer' | 'client' | 'jo
     
     const q = query(
       collection(db, 'work_requests'),
-      where(field, '==', auth.currentUser.uid),
-      orderBy('createdAt', 'desc')
+      where(field, '==', auth.currentUser.uid)
     );
 
     const unsubscribe = onSnapshot(q, (snap) => {
-      setRequests(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      const rows = snap.docs.map(d => ({ id: d.id, ...d.data() } as any));
+      rows.sort((a: any, b: any) => {
+        const aTime = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : new Date(a.createdAt || 0).getTime();
+        const bTime = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : new Date(b.createdAt || 0).getTime();
+        return bTime - aTime;
+      });
+      setRequests(rows);
       setLoading(false);
     }, (error) => {
       console.error('Error fetching work requests:', error);

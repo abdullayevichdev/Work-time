@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { X, Briefcase, DollarSign, Tag, AlignLeft, Layers, Target, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,7 @@ import { db, auth } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { toast } from 'sonner';
 import { handleFirestoreError, OperationType } from '@/lib/firestore-errors';
+import { createJob } from '@/lib/jobs';
 
 interface PostJobModalProps {
   isOpen: boolean;
@@ -52,16 +53,18 @@ export function PostJobModal({ isOpen, onClose, onSuccess }: PostJobModalProps) 
 
     setLoading(true);
     try {
-      await addDoc(collection(db, 'jobs'), {
+      await createJob({
         title: formData.title,
         description: formData.description,
         budget: Number(formData.budget),
         tags: formData.tags,
         userId: auth.currentUser.uid,
+        clientId: auth.currentUser.uid,
+        clientName: auth.currentUser.displayName || 'Anonymous Client',
+        clientAvatar: auth.currentUser.photoURL || '',
+        clientRating: 4.8,
         status: 'open',
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      });
+      } as any);
 
       toast.success(t('job_posted_success'));
       onSuccess();

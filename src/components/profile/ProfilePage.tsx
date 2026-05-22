@@ -1,10 +1,11 @@
 import * as React from 'react';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { 
   Camera, X, Check, Image as ImageIcon, ExternalLink, Star, MapPin, Loader2,
-  Edit3, Globe, Mail, Github, User, Plus, Instagram, Send, Award
+  Edit3, Globe, Mail, Github, User, Plus, Instagram, Send, Award,
+  ShieldAlert, Ban, Flag, MessageSquare
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,13 +18,18 @@ import {
 } from '@/components/ui/dialog';
 import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, getDoc, setDoc, getDocFromServer, updateDoc, collection, query, where, onSnapshot } from 'firebase/firestore';
+import { 
+  doc, getDoc, setDoc, getDocFromServer, updateDoc, 
+  collection, query, where, onSnapshot, addDoc, serverTimestamp 
+} from 'firebase/firestore';
 import { toast } from 'sonner';
 import { handleFirestoreError, OperationType } from '@/lib/firestore-errors';
 import { ADMIN_USERS } from '@/constants';
 import { calculateProfileCompletion } from '@/lib/profile';
 import { useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { SendRequestModal } from './SendRequestModal';
+import { ReportModal } from './ReportModal';
 
 export function ProfilePage() {
   const { id } = useParams();
@@ -58,6 +64,12 @@ export function ProfilePage() {
 
   const [visitorProfile, setVisitorProfile] = useState<any>(null);
   
+  // Modals and blocking states
+  const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [blockedList, setBlockedList] = useState<string[]>([]);
+  
   const isOwnProfile = !id || (user && user.uid === id);
   const isProfileChecked = useRef(false);
 
@@ -75,6 +87,46 @@ export function ProfilePage() {
 
   const visitorCompletion = calculateProfileCompletion(visitorProfile);
   const isVisitorComplete = visitorCompletion >= 80;
+
+  useEffect(() => {
+    if (!isOwnProfile && !isVisitorComplete && !loading && user) {
+      toast.error("Boshqa foydalanuvchilar ma'lumotlarini ko'rish uchun avval o'z profilingizni 80% yoki undan yuqori to'ldirishingiz kerak!");
+      navigate('/profile');
+    }
+  }, [isOwnProfile, isVisitorComplete, loading, user, navigate]);
+
+  // Real-time block subscription
+  useEffect(() => {
+    if (user && profile) {
+      const targetId = profile.id || profile.uid;
+      const unsub = onSnapshot(doc(db, 'users', user.uid), (docSnap) => {
+        if (docSnap.exists()) {
+          const list = docSnap.data().blockedUsers || [];
+          setBlockedList(list);
+          setIsBlocked(list.includes(targetId));
+        }
+      });
+      return () => unsub();
+    }
+  }, [user, profile]);
+
+  const handleToggleBlock = async () => {
+    if (!user || !profile) return;
+    const targetId = profile.id || profile.uid;
+    const updatedList = isBlocked 
+      ? blockedList.filter(uid => uid !== targetId)
+      : [...blockedList, targetId];
+
+    try {
+      await updateDoc(doc(db, 'users', user.uid), {
+        blockedUsers: updatedList
+      });
+      toast.success(isBlocked ? "Foydalanuvchi blokdan chiqarildi." : "Foydalanuvchi muvaffaqiyatli bloklandi.");
+    } catch (err) {
+      console.error(err);
+      toast.error("Amalni bajarishda xatolik.");
+    }
+  };
 
   useEffect(() => {
     let unsubscribe = () => {};
@@ -98,7 +150,30 @@ export function ProfilePage() {
         if (docSnap?.exists()) {
           const data = docSnap.data();
           setProfile({ id: targetId, ...data });
-          
+
+          // Increment visitor profileViews if not own profile
+          if (currentUser && currentUser.uid !== targetId) {
+            updateDoc(docRef, {
+              profileViews: (data.profileViews || 0) + 1
+            }).catch(e => console.warn("Failed to increment views", e));
+
+            // Write premium profile viewed alert
+            if (data.membership === 'premium' || data.is_premium) {
+              addDoc(collection(db, 'notifications'), {
+                userId: targetId,
+                type: 'profile_viewed',
+                title: '👁️ Profilingiz ko\'rildi',
+                message: `${currentUser.displayName || 'Kimdir'} sizning profilingizni ko'rib chiqdi.`,
+                body: `${currentUser.displayName || 'Kimdir'} sizning profilingizni ko'rib chiqdi.`,
+                actorId: currentUser.uid,
+                actorName: currentUser.displayName || 'Foydalanuvchi',
+                actorAvatar: currentUser.photoURL || '',
+                link: `/profile/${currentUser.uid}`,
+                read: false,
+                createdAt: serverTimestamp()
+              }).catch(e => console.warn("Failed to post view notification", e));
+            }
+          }
           if (currentUser && currentUser.uid === targetId) {
             // Initialize edit states only if own profile
             setEditedName(data.full_name || currentUser.displayName || '');
@@ -471,33 +546,9 @@ export function ProfilePage() {
     }
   };
 
+  // Wait for redirect to happen if not complete
   if (!isOwnProfile && !isVisitorComplete && !loading && user) {
-
-    return (
-      <div className="pt-24 min-h-[70vh] flex items-center justify-center container mx-auto px-6">
-        <Card className="glass max-w-md w-full p-8 text-center border-white/10 relative overflow-hidden">
-          <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent" />
-          <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
-            <Loader2 className="w-10 h-10 text-primary animate-pulse" />
-          </div>
-          <h2 className="text-2xl font-display font-bold mb-4 text-indigo-950">{t('complete_profile_first')}</h2>
-          <p className="text-indigo-950/60 mb-8 leading-relaxed font-bold text-sharp uppercase tracking-tight text-xs">{t('complete_profile_desc')}</p>
-          <Button 
-            onClick={() => navigate('/profile')} 
-            className="w-full bg-primary hover:bg-primary/80 h-12 rounded-xl font-bold transition-all shadow-lg shadow-primary/20"
-          >
-            {t('complete_profile')}
-          </Button>
-          <Button 
-            onClick={() => navigate(-1)} 
-            variant="ghost"
-            className="w-full mt-4 text-indigo-950/40 hover:text-indigo-950 font-bold uppercase tracking-widest text-[10px]"
-          >
-            {t('go_back')}
-          </Button>
-        </Card>
-      </div>
-    );
+    return null;
   }
 
   if (loading) {
@@ -517,7 +568,7 @@ export function ProfilePage() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_-20%,rgba(120,119,198,0.3),rgba(255,255,255,0))]" />
         
         {/* Architectural Grid pattern */}
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
+        <div className="absolute inset-0 bg-[radial-gradient(rgba(99,102,241,0.12)_0.7px,transparent_0.7px)] bg-[size:4px_4px] opacity-20" />
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]" />
         
         {/* Volumetric Glow */}
@@ -669,19 +720,39 @@ export function ProfilePage() {
                 )}
               </div>
 
+
+
               <div className="flex gap-3">
                 {!isOwnProfile ? (
-                  <Button 
-                    onClick={handleSendRequest}
-                    disabled={isRequesting || hasRequestSent}
-                    className="flex-1 bg-primary text-white hover:bg-primary/90 h-11 md:h-12 rounded-xl font-bold text-sharp"
-                  >
-                    {hasRequestSent ? (
-                      <><Check className="w-4 h-4 mr-2" /> {t('request_sent')}</>
-                    ) : (
-                      <><Edit3 className="w-4 h-4 mr-2" /> {t('send_request')}</>
-                    )}
-                  </Button>
+                  <div className="flex flex-col gap-3 w-full">
+                    <Button 
+                      onClick={() => setIsRequestModalOpen(true)}
+                      className="w-full bg-primary text-white hover:bg-primary/95 h-11 md:h-12 rounded-xl font-bold text-sharp uppercase tracking-wider text-xs gap-2 cursor-pointer shadow-lg shadow-primary/15"
+                    >
+                      <Send className="w-4 h-4" />
+                      {t('send_request') || 'Hamkorlik taklifi'}
+                    </Button>
+                    
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <Button
+                        onClick={() => setIsReportModalOpen(true)}
+                        variant="outline"
+                        className="border-red-500/20 hover:bg-red-500/5 text-red-500 h-11 rounded-xl font-bold text-xs uppercase tracking-wider gap-1.5 cursor-pointer"
+                      >
+                        <Flag className="w-3.5 h-3.5" />
+                        Shikoyat
+                      </Button>
+                      
+                      <Button
+                        onClick={handleToggleBlock}
+                        variant="outline"
+                        className="border-indigo-900/10 hover:bg-indigo-900/5 text-indigo-950 h-11 rounded-xl font-bold text-xs uppercase tracking-wider gap-1.5 cursor-pointer"
+                      >
+                        <Ban className="w-3.5 h-3.5 text-indigo-950/60" />
+                        {isBlocked ? 'Blokdan yechish' : 'Bloklash'}
+                      </Button>
+                    </div>
+                  </div>
                 ) : isEditing ? (
                   <Button onClick={handleSave} className="flex-1 bg-primary hover:bg-primary/80 h-11 md:h-12 rounded-xl">
                     <Check className="w-4 h-4 mr-2" /> {t('save_changes')}
@@ -707,77 +778,85 @@ export function ProfilePage() {
               <h3 className="font-bold mb-6 flex items-center text-indigo-950 text-sharp uppercase tracking-widest text-sm">
                 <Globe className="w-4 h-4 mr-2 text-primary" /> {t('details')}
               </h3>
-              <div className="space-y-4">
+              <div className="space-y-5">
+                {/* Email */}
                 <div className="flex items-center gap-4 group min-w-0">
-                  <div className="w-8 h-8 rounded-lg bg-indigo-900/5 flex items-center justify-center border border-indigo-900/5 group-hover:border-primary/50 transition-colors shrink-0">
-                    <Mail className="w-3.5 h-3.5 text-indigo-900/60 group-hover:text-primary" />
+                  <div className="w-9 h-9 rounded-xl bg-indigo-900/5 flex items-center justify-center border border-indigo-900/5 group-hover:border-primary/40 transition-colors shrink-0">
+                    <Mail className="w-4 h-4 text-indigo-900/50 group-hover:text-primary transition-colors" />
                   </div>
-                  <span className="text-sm text-indigo-950/60 font-bold truncate text-sharp overflow-hidden">{profile?.email || user?.email}</span>
+                  <span className="text-sm text-indigo-950/60 font-semibold truncate overflow-hidden">{profile?.email || user?.email}</span>
                 </div>
                 
-                  <div className="flex items-center gap-4 group">
-                    <div className="w-8 h-8 rounded-lg bg-indigo-900/5 flex items-center justify-center border border-indigo-900/5 group-hover:border-primary/50 transition-colors">
-                      <Globe className="w-3.5 h-3.5 text-indigo-900/60 group-hover:text-primary" />
-                    </div>
-                    {isEditing ? (
-                      <Input 
-                        value={editedPhone} 
-                        onChange={handlePhoneChange}
-                        placeholder="+998 90 123 45 67"
-                        className="bg-white/40 border-indigo-900/10 p-2 h-8 text-sm text-indigo-950 font-bold rounded-lg"
-                      />
-                    ) : (
-                      <span className="text-sm text-indigo-950/60 font-bold text-sharp">{profile?.phone || t('no_phone')}</span>
-                    )}
+                {/* Phone */}
+                <div className="flex items-center gap-4 group min-w-0">
+                  <div className="w-9 h-9 rounded-xl bg-indigo-900/5 flex items-center justify-center border border-indigo-900/5 group-hover:border-primary/40 transition-colors shrink-0">
+                    <Globe className="w-4 h-4 text-indigo-900/50 group-hover:text-primary transition-colors" />
                   </div>
+                  {isEditing ? (
+                    <Input 
+                      value={editedPhone} 
+                      onChange={(e) => setEditedPhone(e.target.value)}
+                      placeholder="+998 90 123 45 67"
+                      className="bg-white/40 border-indigo-900/10 h-9 text-sm text-indigo-950 font-semibold rounded-lg flex-1"
+                    />
+                  ) : (
+                    <span className="text-sm text-indigo-950/60 font-semibold tracking-wide">{profile?.phone || t('no_phone')}</span>
+                  )}
+                </div>
 
-                  <div className="flex items-center gap-4 group">
-                    <div className="w-8 h-8 rounded-lg bg-indigo-900/5 flex items-center justify-center border border-indigo-900/5 group-hover:border-primary/50 transition-colors">
-                      <MapPin className="w-3.5 h-3.5 text-indigo-900/60 group-hover:text-primary" />
-                    </div>
+                {/* Location */}
+                <div className="flex items-center gap-4 group min-w-0">
+                  <div className="w-9 h-9 rounded-xl bg-indigo-900/5 flex items-center justify-center border border-indigo-900/5 group-hover:border-primary/40 transition-colors shrink-0">
+                    <MapPin className="w-4 h-4 text-indigo-900/50 group-hover:text-primary transition-colors" />
+                  </div>
                   {isEditing ? (
                     <Input 
                       value={editedLocation} 
                       onChange={(e) => setEditedLocation(e.target.value)}
-                      className="bg-white/40 border-indigo-900/10 p-2 h-8 text-sm text-indigo-950 font-bold rounded-lg"
+                      placeholder="Tashkent, Uzbekistan"
+                      className="bg-white/40 border-indigo-900/10 h-9 text-sm text-indigo-950 font-semibold rounded-lg flex-1"
                     />
                   ) : (
-                    <span className="text-sm text-indigo-950/60 font-bold text-sharp">{profile?.location || t('uzbekistan')}</span>
+                    <span className="text-sm text-indigo-950/60 font-semibold">{profile?.location || t('uzbekistan')}</span>
                   )}
                 </div>
 
-                <div className="pt-6 border-t border-indigo-900/5 flex justify-center gap-6">
+                {/* Socials */}
+                <div className="pt-4 border-t border-indigo-900/5 flex justify-center gap-6">
                   {isEditing ? (
                     <div className="w-full space-y-3">
                       <div className="flex items-center gap-3">
-                        <Github className="w-4 h-4 text-indigo-900/40" />
+                        <Github className="w-4 h-4 text-indigo-900/40 shrink-0" />
                         <Input value={editedGithub} onChange={(e) => setEditedGithub(e.target.value)} placeholder="Github URL" className="bg-white/5 h-8 text-xs text-indigo-950" />
                       </div>
                       <div className="flex items-center gap-3">
-                        <Send className="w-4 h-4 text-indigo-900/40" />
+                        <Send className="w-4 h-4 text-indigo-900/40 shrink-0" />
                         <Input value={editedTelegram} onChange={(e) => setEditedTelegram(e.target.value)} placeholder="Telegram URL" className="bg-white/5 h-8 text-xs text-indigo-950" />
                       </div>
                       <div className="flex items-center gap-3">
-                        <Instagram className="w-4 h-4 text-indigo-900/40" />
+                        <Instagram className="w-4 h-4 text-indigo-900/40 shrink-0" />
                         <Input value={editedInstagram} onChange={(e) => setEditedInstagram(e.target.value)} placeholder="Instagram URL" className="bg-white/5 h-8 text-xs text-indigo-950" />
                       </div>
                     </div>
                   ) : (
                     <>
                       {profile?.socials?.github && (
-                        <motion.a whileHover={{ y: -3 }} href={profile.socials.github} target="_blank" rel="noopener noreferrer" className="text-indigo-900/30 hover:text-primary">
+                        <motion.a whileHover={{ y: -3 }} href={profile.socials.github} target="_blank" rel="noopener noreferrer" className="text-indigo-900/30 hover:text-primary transition-colors">
                           <Github className="w-5 h-5" />
                         </motion.a>
                       )}
                       {profile?.socials?.telegram && (
-                        <motion.a whileHover={{ y: -3 }} href={profile.socials.telegram} target="_blank" rel="noopener noreferrer" className="text-indigo-900/30 hover:text-primary">
+                        <motion.a whileHover={{ y: -3 }} href={profile.socials.telegram} target="_blank" rel="noopener noreferrer" className="text-indigo-900/30 hover:text-primary transition-colors">
                           <Send className="w-5 h-5" />
                         </motion.a>
                       )}
                       {profile?.socials?.instagram && (
-                        <motion.a whileHover={{ y: -3 }} href={profile.socials.instagram} target="_blank" rel="noopener noreferrer" className="text-indigo-900/30 hover:text-primary">
+                        <motion.a whileHover={{ y: -3 }} href={profile.socials.instagram} target="_blank" rel="noopener noreferrer" className="text-indigo-900/30 hover:text-primary transition-colors">
                           <Instagram className="w-5 h-5" />
                         </motion.a>
+                      )}
+                      {!profile?.socials?.github && !profile?.socials?.telegram && !profile?.socials?.instagram && (
+                        <p className="text-xs text-indigo-950/20 font-bold uppercase tracking-widest">No socials added</p>
                       )}
                     </>
                   )}
@@ -1009,6 +1088,24 @@ export function ProfilePage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Send Peer Request Modal */}
+      {profile && (
+        <SendRequestModal 
+          isOpen={isRequestModalOpen} 
+          onClose={() => setIsRequestModalOpen(false)} 
+          targetUser={profile} 
+        />
+      )}
+
+      {/* Report Modal */}
+      {profile && (
+        <ReportModal 
+          isOpen={isReportModalOpen} 
+          onClose={() => setIsReportModalOpen(false)} 
+          targetUser={profile} 
+        />
+      )}
     </div>
   );
 }

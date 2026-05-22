@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { X, Send, MessageSquare, DollarSign, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { db, auth } from '@/lib/firebase';
-import { collection, addDoc } from 'firebase/firestore';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
+import { submitProposal } from '@/hooks/useProposals';
 
 interface ApplyModalProps {
   isOpen: boolean;
@@ -31,19 +31,28 @@ export function ApplyModal({ isOpen, onClose, job }: ApplyModalProps) {
 
     setLoading(true);
     try {
-      await addDoc(collection(db, 'proposals'), {
+      await submitProposal(job.id, {
+        jobId: job.id,
         job_id: job.id,
-        client_id: job.userId,
-        freelancer_id: auth.currentUser.uid,
+        client_id: job.userId || job.clientId || '',
+        clientId: job.userId || job.clientId || '',
+        freelancerId: auth.currentUser.uid,
+        freelancerName: auth.currentUser.displayName || 'Anonymous',
+        freelancerAvatar: auth.currentUser.photoURL || '',
+        bidAmount: Number(formData.bid_amount),
+        deliveryDays: Number(formData.estimated_days),
+        coverLetter: formData.cover_letter,
+        status: 'pending',
+        
+        // Legacy compat fields
+        job_title: job.title,
         freelancer_name: auth.currentUser.displayName || 'Anonymous',
         freelancer_avatar: auth.currentUser.photoURL || '',
-        job_title: job.title,
         bid_amount: Number(formData.bid_amount),
         estimated_days: Number(formData.estimated_days),
         cover_letter: formData.cover_letter,
-        status: 'pending',
         created_at: new Date().toISOString()
-      });
+      } as any);
 
       toast.success(t('proposal_submitted'));
       onClose();

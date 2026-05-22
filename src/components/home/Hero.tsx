@@ -1,4 +1,4 @@
-import { motion, useScroll, useTransform, useReducedMotion, AnimatePresence } from 'motion/react';
+import { motion, useScroll, useTransform, useReducedMotion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';

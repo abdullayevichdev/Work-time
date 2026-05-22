@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { 
   Users, Briefcase, DollarSign, Star, 
   CheckCircle2, Trophy, Globe, Heart, 
